@@ -5,6 +5,15 @@
  * Aquí cargamos automáticamente todos los módulos del core.
  * Cada módulo vive en su propia carpeta dentro de /gw-core/
  * y puede contener sus propios archivos PHP, JS y CSS.
+ * 
+ * Updated for Github auto-updater.
+ * 
+ * @package GW Core
+ * @version 1.0.0
+ * @author Luigi Libet
+ * @link https://github.com/LuigiLibet/gw-core
+ * @license GPL-2.0+
+ * @copyright 2025 Luigi Libet
  */
 
 /* ---------------------------------------------------------
