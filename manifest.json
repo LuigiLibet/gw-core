@@ -1,5 +1,5 @@
 {
-    "version": "1.0.1",
-    "zip_url": "https://github.com/LuigiLibet/gw-core/archive/refs/tags/v1.0.1.zip",
-    "checksum": "sha256:de0de01608f6c505d3fec0acda79d4baee8a30682efb62894b27279a82991a71"
-  }
+  "version": "v1.0.4",
+  "zip_url": "https://github.com/LuigiLibet/gw-core/archive/refs/tags/v1.0.4.zip",
+  "checksum": "sha256:f43c708e3ece7dd33785550c1b708454560115d639df1254a938fa9bfcc81b26"
+}
