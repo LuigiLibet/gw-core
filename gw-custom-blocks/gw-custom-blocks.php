@@ -1,4 +1,14 @@
 <?php
+/***
+ * 
+ * @package GW Custom Blocks
+ * @version 1.1.0
+ * @author Luigi Libet
+ * @link https://github.com/LuigiLibet/gw-custom-blocks
+ * @license GPL-2.0+
+ * @copyright 2025 Luigi Libet
+ */
+
 // Prevent direct access
 if (!defined('ABSPATH')) {
 	exit;
