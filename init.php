@@ -9,7 +9,7 @@
  * Updated for Github auto-updater.
  * 
  * @package GW Core
- * @version 1.1.0
+ * @version 1.1.2
  * @author Luigi Libet
  * @link https://github.com/LuigiLibet/gw-core
  * @license GPL-2.0+

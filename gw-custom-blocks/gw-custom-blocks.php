@@ -2,7 +2,7 @@
 /***
  * 
  * @package GW Custom Blocks
- * @version 1.1.0
+ * @version 1.1.2
  * @author Luigi Libet
  * @link https://github.com/LuigiLibet/gw-custom-blocks
  * @license GPL-2.0+
@@ -46,6 +46,57 @@ if (!isset($GLOBALS['gw_custom_blocks_registry'])) {
 // Keep a registry for icon libraries
 if (!isset($GLOBALS['gw_icon_libraries'])) {
 	$GLOBALS['gw_icon_libraries'] = array();
+}
+
+/**
+ * Check if we are in the block editor.
+ * Similar to is_admin() but specifically for the Gutenberg block editor.
+ *
+ * @return bool True if in the block editor, false otherwise.
+ *
+ * @example
+ * if (gw_in_editor()) {
+ *     // Show editor-specific content
+ * } else {
+ *     // Show frontend content
+ * }
+ */
+function gw_in_editor() {
+	// Primary method: Check if serving REST request with edit context
+	// This is the standard way WordPress indicates editor rendering
+	if (function_exists('wp_is_serving_rest_request') 
+		&& wp_is_serving_rest_request() 
+		&& ($_GET['context'] ?? '') === 'edit') {
+		return true;
+	}
+	
+	// Fallback: Check if we're in the admin and if it's the block editor
+	if (is_admin()) {
+		// Use wp_is_block_editor() if available (WordPress 5.0+)
+		if (function_exists('wp_is_block_editor')) {
+			if (wp_is_block_editor()) {
+				return true;
+			}
+		}
+		
+		// Fallback: check current screen
+		$screen = get_current_screen();
+		if ($screen) {
+			if (method_exists($screen, 'is_block_editor') && $screen->is_block_editor()) {
+				return true;
+			}
+			
+			// Additional fallback: check if we're in the post editor
+			if (in_array($screen->base, array('post', 'page'))) {
+				// Check if block editor is enabled (not classic editor)
+				if (function_exists('use_block_editor_for_post_type')) {
+					return use_block_editor_for_post_type($screen->post_type);
+				}
+			}
+		}
+	}
+	
+	return false;
 }
 
 /**
@@ -200,6 +251,16 @@ function gw_register_block($slug, $args = array()) {
 			if (0 !== strpos($template_path, ABSPATH)) {
 				$template_path = $base_dir . ltrim($template_path, '/');
 			}
+			
+			// Check if we're in the editor and look for editor.php
+			if (gw_in_editor()) {
+				$editor_path = dirname($template_path) . '/editor.php';
+				if (file_exists($editor_path)) {
+					return $include_php($editor_path);
+				}
+			}
+			
+			// Use regular render template
 			return $include_php($template_path);
 		}
 
@@ -265,12 +326,12 @@ function gw_custom_blocks_bootstrap_editor_script() {
 	$bootstrapped = true;
 
 	$theme_uri = trailingslashit(get_template_directory_uri());
-	$script_uri = $theme_uri . 'editor/gw-custom-blocks/gw-custom-blocks.js';
+	$script_uri = $theme_uri . 'gw/gw-core/gw-custom-blocks/gw-custom-blocks.js';
 	$deps = array('wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render', 'wp-data', 'wp-core-data', 'wp-api-fetch');
 	wp_register_script('gw-custom-blocks-editor', $script_uri, $deps, wp_get_theme()->get('Version'), true);
 
 	// Register editor styles for gallery control (will be enqueued via hook)
-	$style_uri = $theme_uri . 'editor/gw-custom-blocks/gw-custom-blocks.css';
+	$style_uri = $theme_uri . 'gw/gw-core/gw-custom-blocks/gw-custom-blocks.css';
 	wp_register_style('gw-custom-blocks-editor-styles', $style_uri, array(), wp_get_theme()->get('Version'));
 
 	// Localize initial registry
@@ -302,9 +363,13 @@ function gw_custom_blocks_update_localization() {
 }
 
 /**
- * Enqueue editor styles for custom blocks.
+ * Enqueue editor scripts and styles for custom blocks.
  */
-function gw_custom_blocks_enqueue_editor_styles() {
+function gw_custom_blocks_enqueue_editor_assets() {
+	// Enqueue the editor script
+	wp_enqueue_script('gw-custom-blocks-editor');
+	
+	// Enqueue editor styles
 	wp_enqueue_style('gw-custom-blocks-editor-styles');
 	
 	// Enqueue icon library CSS files in the editor
@@ -327,7 +392,7 @@ function gw_custom_blocks_enqueue_editor_styles() {
 		}
 	}
 }
-add_action('enqueue_block_editor_assets', 'gw_custom_blocks_enqueue_editor_styles');
+add_action('enqueue_block_editor_assets', 'gw_custom_blocks_enqueue_editor_assets');
 
 /**
  * Get gallery image URLs from comma-separated image IDs string.
