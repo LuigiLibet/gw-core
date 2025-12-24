@@ -2,7 +2,7 @@
 /***
  * 
  * @package GW Custom Blocks
- * @version 1.1.2
+ * @version 1.2.0
  * @author Luigi Libet
  * @link https://github.com/LuigiLibet/gw-custom-blocks
  * @license GPL-2.0+
@@ -326,13 +326,95 @@ function gw_custom_blocks_bootstrap_editor_script() {
 	$bootstrapped = true;
 
 	$theme_uri = trailingslashit(get_template_directory_uri());
-	$script_uri = $theme_uri . 'gw/gw-core/gw-custom-blocks/gw-custom-blocks.js';
-	$deps = array('wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-block-editor', 'wp-server-side-render', 'wp-data', 'wp-core-data', 'wp-api-fetch');
-	wp_register_script('gw-custom-blocks-editor', $script_uri, $deps, wp_get_theme()->get('Version'), true);
+	$base_path = $theme_uri . 'gw/gw-core/gw-custom-blocks/';
+	$version = wp_get_theme()->get('Version');
+	
+	// Dependencies base de WordPress
+	$wp_deps = array('wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 
+	                 'wp-block-editor', 'wp-server-side-render', 'wp-data', 
+	                 'wp-core-data', 'wp-api-fetch');
+	
+	// 1. Utilidades (sin dependencias internas, solo wp.*)
+	wp_register_script(
+		'gw-custom-blocks-utils',
+		$base_path . 'lib/utils.js',
+		$wp_deps,
+		$version,
+		true
+	);
+	
+	// 2. Dependencias (depende de utils)
+	wp_register_script(
+		'gw-custom-blocks-deps',
+		$base_path . 'lib/dependencies.js',
+		array_merge($wp_deps, array('gw-custom-blocks-utils')),
+		$version,
+		true
+	);
+	
+	// 3. Controles individuales (dependen de deps y utils)
+	$controls = array(
+		'post-select' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		'image' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		'gallery' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		'repeater' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		'icon-picker' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		'term-select' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+	);
+	
+	foreach ($controls as $control => $control_deps) {
+		wp_register_script(
+			"gw-custom-blocks-control-{$control}",
+			$base_path . "controls/{$control}.js",
+			$control_deps,
+			$version,
+			true
+		);
+	}
+	
+	// 4. Controles base (depende de todos los controles individuales)
+	$base_control_deps = array_merge(
+		array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
+		array_map(function($c) { return "gw-custom-blocks-control-{$c}"; }, array_keys($controls))
+	);
+	wp_register_script(
+		'gw-custom-blocks-controls-base',
+		$base_path . 'controls/base.js',
+		$base_control_deps,
+		$version,
+		true
+	);
+	
+	// 5. UI (toolbar, inspector) - depende de base
+	wp_register_script(
+		'gw-custom-blocks-ui',
+		$base_path . 'core/ui.js',
+		array('gw-custom-blocks-controls-base'),
+		$version,
+		true
+	);
+	
+	// 6. Registro de bloques - depende de ui
+	wp_register_script(
+		'gw-custom-blocks-registry',
+		$base_path . 'core/block-registry.js',
+		array('gw-custom-blocks-ui'),
+		$version,
+		true
+	);
+	
+	// 7. Orquestador principal - depende de registry
+	wp_register_script(
+		'gw-custom-blocks-editor',
+		$base_path . 'gw-custom-blocks.js',
+		array('gw-custom-blocks-registry'),
+		$version,
+		true
+	);
 
 	// Register editor styles for gallery control (will be enqueued via hook)
-	$style_uri = $theme_uri . 'gw/gw-core/gw-custom-blocks/gw-custom-blocks.css';
-	wp_register_style('gw-custom-blocks-editor-styles', $style_uri, array(), wp_get_theme()->get('Version'));
+	$style_uri = $base_path . 'gw-custom-blocks.css';
+	wp_register_style('gw-custom-blocks-editor-styles', $style_uri, array(), $version);
 
 	// Localize initial registry
 	gw_custom_blocks_update_localization();
@@ -356,16 +438,23 @@ function gw_custom_blocks_update_localization() {
 		);
 	}
 	
-	wp_localize_script('gw-custom-blocks-editor', 'GW_CUSTOM_BLOCKS', array(
+	$localization_data = array(
 		'blocks' => $blocks,
 		'iconLibraries' => $icon_libraries,
-	));
+	);
+	
+	// Localize both scripts that need GW_CUSTOM_BLOCKS
+	wp_localize_script('gw-custom-blocks-registry', 'GW_CUSTOM_BLOCKS', $localization_data);
+	wp_localize_script('gw-custom-blocks-editor', 'GW_CUSTOM_BLOCKS', $localization_data);
 }
 
 /**
  * Enqueue editor scripts and styles for custom blocks.
  */
 function gw_custom_blocks_enqueue_editor_assets() {
+	// Update localization before enqueuing scripts
+	gw_custom_blocks_update_localization();
+	
 	// Enqueue the editor script
 	wp_enqueue_script('gw-custom-blocks-editor');
 	
@@ -550,6 +639,87 @@ function gw_get_image_url($value, $size = 'full') {
 	return '';
 }
 
+/**
+ * Get term names from comma-separated term IDs string.
+ *
+ * Helper function to get term information from comma-separated string of term IDs.
+ *
+ * @param string $ids_string Comma-separated string of term IDs (e.g., "123,456,789")
+ * @param string $taxonomy Taxonomy name. Required to fetch term information.
+ * @return array Array of term objects with 'id', 'name', 'slug', and 'parent' properties. Returns empty array if no valid IDs found.
+ *
+ * @example
+ * $term_ids = "123,456,789";
+ * $terms = gw_get_term_names($term_ids, 'category');
+ * // Returns: array(
+ * //   array('id' => 123, 'name' => 'Category 1', 'slug' => 'category-1', 'parent' => 0),
+ * //   array('id' => 456, 'name' => 'Category 2', 'slug' => 'category-2', 'parent' => 0),
+ * //   array('id' => 789, 'name' => 'Category 3', 'slug' => 'category-3', 'parent' => 0),
+ * // )
+ *
+ * @example
+ * // In template
+ * $term_ids = isset($attributes['categories']) ? $attributes['categories'] : '';
+ * $terms = gw_get_term_names($term_ids, 'product_cat');
+ * foreach ($terms as $term) {
+ *     echo '<div>' . esc_html($term['name']) . '</div>';
+ * }
+ */
+function gw_get_term_names($ids_string, $taxonomy) {
+	if (empty($ids_string) || empty($taxonomy)) {
+		return array();
+	}
+
+	// Parse comma-separated IDs
+	$ids = array_map('trim', explode(',', $ids_string));
+	$ids = array_filter($ids, function($id) {
+		return is_numeric($id) && $id > 0;
+	});
+
+	if (empty($ids)) {
+		return array();
+	}
+
+	// Validate taxonomy exists
+	if (!taxonomy_exists($taxonomy)) {
+		return array();
+	}
+
+	// Get terms
+	$terms = get_terms(array(
+		'taxonomy' => $taxonomy,
+		'include' => array_map('intval', $ids),
+		'hide_empty' => false,
+	));
+
+	if (is_wp_error($terms) || empty($terms)) {
+		return array();
+	}
+
+	// Build result array preserving order from IDs string
+	$result = array();
+	$terms_by_id = array();
+	foreach ($terms as $term) {
+		$terms_by_id[$term->term_id] = $term;
+	}
+
+	// Preserve the order from the IDs string
+	foreach ($ids as $id) {
+		$id = (int) $id;
+		if (isset($terms_by_id[$id])) {
+			$term = $terms_by_id[$id];
+			$result[] = array(
+				'id' => $term->term_id,
+				'name' => $term->name,
+				'slug' => $term->slug,
+				'parent' => $term->parent,
+			);
+		}
+	}
+
+	return $result;
+}
+
 
 
 /**
@@ -574,6 +744,63 @@ function gw_custom_blocks_register_rest_routes() {
 			),
 			'per_page' => array(
 				'default' => 10,
+				'sanitize_callback' => 'absint',
+			),
+		),
+	));
+
+	// Register REST API route for searching terms
+	register_rest_route('gw/v1', '/terms', array(
+		'methods' => 'GET',
+		'callback' => 'gw_custom_blocks_rest_search_terms',
+		'permission_callback' => function() {
+			return current_user_can('edit_posts');
+		},
+		'args' => array(
+			'taxonomy' => array(
+				'required' => true,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'search' => array(
+				'default' => '',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'per_page' => array(
+				'default' => 10,
+				'sanitize_callback' => 'absint',
+			),
+			'hide_empty' => array(
+				'default' => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+			),
+			'orderby' => array(
+				'default' => 'name',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'order' => array(
+				'default' => 'ASC',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'include' => array(
+				'default' => array(),
+				'sanitize_callback' => function($param) {
+					if (is_string($param)) {
+						$param = explode(',', $param);
+					}
+					return array_map('absint', (array) $param);
+				},
+			),
+			'exclude' => array(
+				'default' => array(),
+				'sanitize_callback' => function($param) {
+					if (is_string($param)) {
+						$param = explode(',', $param);
+					}
+					return array_map('absint', (array) $param);
+				},
+			),
+			'parent' => array(
+				'default' => '',
 				'sanitize_callback' => 'absint',
 			),
 		),
@@ -624,6 +851,72 @@ function gw_custom_blocks_rest_search_posts($request) {
 	// but usually we just store the ID.
 
 	return rest_ensure_response($posts);
+}
+
+/**
+ * REST API callback for searching terms.
+ * Used by the Term Select control.
+ */
+function gw_custom_blocks_rest_search_terms($request) {
+	$taxonomy = $request->get_param('taxonomy');
+	$search = $request->get_param('search');
+	$per_page = $request->get_param('per_page');
+
+	// Validate taxonomy
+	if (!taxonomy_exists($taxonomy)) {
+		return new WP_Error('invalid_taxonomy', 'Invalid taxonomy', array('status' => 400));
+	}
+
+	// Build query args from request parameters
+	$args = array(
+		'taxonomy' => $taxonomy,
+		'number' => $per_page,
+		'hide_empty' => $request->get_param('hide_empty'),
+		'orderby' => $request->get_param('orderby'),
+		'order' => $request->get_param('order'),
+	);
+
+	// Add search if provided
+	if (!empty($search)) {
+		$args['search'] = $search;
+	}
+
+	// Add include/exclude if provided
+	$include = $request->get_param('include');
+	if (!empty($include) && is_array($include)) {
+		$args['include'] = $include;
+	}
+
+	$exclude = $request->get_param('exclude');
+	if (!empty($exclude) && is_array($exclude)) {
+		$args['exclude'] = $exclude;
+	}
+
+	// Add parent if provided and taxonomy is hierarchical
+	$taxonomy_obj = get_taxonomy($taxonomy);
+	if ($taxonomy_obj && $taxonomy_obj->hierarchical) {
+		$parent = $request->get_param('parent');
+		if ($parent !== '') {
+			$args['parent'] = $parent;
+		}
+	}
+
+	// Get terms using WP_Term_Query
+	$terms = get_terms($args);
+	$terms_data = array();
+
+	if (!is_wp_error($terms) && !empty($terms)) {
+		foreach ($terms as $term) {
+			$terms_data[] = array(
+				'value' => (string) $term->term_id,
+				'label' => $term->name,
+				'parent' => (int) $term->parent,
+				'slug' => $term->slug,
+			);
+		}
+	}
+
+	return rest_ensure_response($terms_data);
 }
 
 /**

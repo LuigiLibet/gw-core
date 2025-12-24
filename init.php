@@ -1,15 +1,15 @@
 <?php
 /**
- * GW Core - Bootstrap general
+ * GW Core - General Bootstrap
  *
- * Aquí cargamos automáticamente todos los módulos del core.
- * Cada módulo vive en su propia carpeta dentro de /gw-core/
- * y puede contener sus propios archivos PHP, JS y CSS.
+ * Here we automatically load all core modules.
+ * Each module lives in its own folder within /gw-core/
+ * and can contain its own PHP, JS and CSS files.
  * 
  * Updated for Github auto-updater.
  * 
  * @package GW Core
- * @version 1.1.2
+ * @version 1.2.0
  * @author Luigi Libet
  * @link https://github.com/LuigiLibet/gw-core
  * @license GPL-2.0+
@@ -17,7 +17,7 @@
  */
 
 /* ---------------------------------------------------------
- * 1) Auto-cargar TODOS los módulos PHP
+ * 1) Auto-load ALL PHP modules
  * --------------------------------------------------------- */
 
  $core_dir = __DIR__;
@@ -25,7 +25,7 @@
  $modules = glob( $core_dir . '/*', GLOB_ONLYDIR );
  
  foreach ( $modules as $module_path ) {
-     // Si el módulo tiene un archivo PHP principal, lo incluimos
+     // If the module has a main PHP file, we include it
      $php_files = glob( $module_path . '/*.php' );
      foreach ( $php_files as $php_file ) {
          require_once $php_file;
@@ -34,7 +34,7 @@
  
  
  /* ---------------------------------------------------------
-  * 2) Registrar CSS y JS de todos los módulos automáticamente
+  * 2) Register CSS and JS for all modules automatically
   * --------------------------------------------------------- */
  
  add_action( 'enqueue_block_editor_assets', function() use ( $modules ) {

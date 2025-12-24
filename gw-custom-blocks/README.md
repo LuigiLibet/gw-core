@@ -161,7 +161,7 @@ Fields define block attributes and automatically generate editor controls.
 
 ### Available controls
 
-**Note:** Control types: `text`, `textarea`, `color`, `range`, `number`, `toggle`, `select`, `gallery`, `image`, `repeater`, `post_select`, `icon_picker`
+**Note:** Control types: `text`, `textarea`, `color`, `range`, `number`, `toggle`, `select`, `gallery`, `image`, `repeater`, `post_select`, `term_select`, `icon_picker`
 
 #### 1. Text (`control: 'text'`)
 
@@ -450,7 +450,111 @@ if (!empty($page_id)) {
 ?>
 ```
 
-#### 12. Icon Picker (`control: 'icon_picker'`)
+#### 12. Term Select (`control: 'term_select'`)
+
+Dropdown to select terms from a taxonomy with AJAX search, support for single or multiple selection, drag & drop ordering (multiple mode), and hierarchical grouping.
+
+```php
+'categories' => array(
+    'type' => 'string',
+    'control' => 'term_select',
+    'label' => 'Select Categories',
+    'taxonomy' => 'category', // Required: taxonomy name
+    'multiple' => true, // Optional: true for multiple selection, false for single (default: false)
+    'args' => array(
+        // Optional: WP_Term_Query arguments
+        'hide_empty' => false,
+        'orderby' => 'name',
+        'order' => 'ASC',
+        'include' => array(1, 2, 3), // Optional: limit to specific term IDs
+        'exclude' => array(4, 5), // Optional: exclude specific term IDs
+        'parent' => 0, // Optional: limit to top-level terms (for hierarchical taxonomies)
+    ),
+    'default' => '', // Comma-separated string for multiple, single ID for single
+)
+```
+
+**Features:**
+- Searchable dropdown using WordPress REST API
+- Single or multiple selection modes
+- Drag & drop reordering for multiple selection (using @dnd-kit)
+- Hierarchical grouping: shows parent/child relationships with indentation
+- Loads first 10 items by default, fetches more on search (up to 20)
+- Stores term IDs as comma-separated string (multiple) or single ID string (single)
+
+**Configuration:**
+- `taxonomy` (required): The taxonomy name (e.g., 'category', 'post_tag', 'product_cat')
+- `multiple` (optional): `true` for multiple selection with drag & drop, `false` for single selection. Default: `false`
+- `args` (optional): Array of `WP_Term_Query` arguments to filter terms:
+  - `hide_empty`: Whether to hide terms not assigned to any posts (default: `false`)
+  - `orderby`: Field to order by ('name', 'count', 'term_id', etc.)
+  - `order`: 'ASC' or 'DESC'
+  - `include`: Array of term IDs to include
+  - `exclude`: Array of term IDs to exclude
+  - `parent`: Parent term ID (for hierarchical taxonomies)
+
+**Helper function:** Use `gw_get_term_names($ids_string, $taxonomy)` in PHP templates to get array of term objects.
+
+**Example usage in template (`blocks/my-block/view.php`):**
+```php
+<?php
+$term_ids = isset($attributes['categories']) ? $attributes['categories'] : '';
+if (!empty($term_ids)) {
+    $terms = gw_get_term_names($term_ids, 'category');
+    foreach ($terms as $term) {
+        ?>
+        <div class="category">
+            <a href="<?php echo esc_url(get_term_link($term['id'])); ?>">
+                <?php echo esc_html($term['name']); ?>
+            </a>
+        </div>
+        <?php
+    }
+}
+?>
+```
+
+**Example with single selection:**
+```php
+gw_register_block('product-category', array(
+    'fields' => array(
+        'category' => array(
+            'type' => 'string',
+            'control' => 'term_select',
+            'label' => 'Product Category',
+            'taxonomy' => 'product_cat',
+            'multiple' => false, // Single selection
+            'args' => array(
+                'hide_empty' => true,
+                'orderby' => 'name',
+            ),
+        ),
+    ),
+));
+```
+
+**Example with multiple selection and drag & drop:**
+```php
+gw_register_block('product-categories', array(
+    'fields' => array(
+        'categories' => array(
+            'type' => 'string',
+            'control' => 'term_select',
+            'label' => 'Product Categories',
+            'taxonomy' => 'product_cat',
+            'multiple' => true, // Multiple selection with drag & drop
+            'args' => array(
+                'hide_empty' => false,
+                'orderby' => 'name',
+                'order' => 'ASC',
+            ),
+            'default' => '',
+        ),
+    ),
+));
+```
+
+#### 13. Icon Picker (`control: 'icon_picker'`)
 
 Icon picker with support for multiple icon libraries (Font Awesome, Flaticon UIcons, etc.).
 
@@ -986,6 +1090,60 @@ $url = isset($attributes['url']) ? $attributes['url'] : '#';
     <?php endif; ?>
     <span class="icon-button-text"><?php echo esc_html($text); ?></span>
 </a>
+```
+
+### Example 6: Block with Term Select (Multiple Categories)
+
+```php
+gw_register_block('category-list', array(
+    'name' => 'Category List',
+    'category' => 'custom',
+    'render' => 'category-list/view.php',
+    'fields' => array(
+        'categories' => array(
+            'type' => 'string',
+            'control' => 'term_select',
+            'label' => 'Categories',
+            'taxonomy' => 'category',
+            'multiple' => true,
+            'args' => array(
+                'hide_empty' => false,
+                'orderby' => 'name',
+                'order' => 'ASC',
+            ),
+            'default' => '',
+        ),
+        'show_count' => array(
+            'type' => 'boolean',
+            'control' => 'toggle',
+            'label' => 'Show Post Count',
+            'default' => false,
+        ),
+    ),
+));
+```
+
+**Template (`blocks/category-list/view.php`):**
+```php
+<?php
+$term_ids = isset($attributes['categories']) ? $attributes['categories'] : '';
+$show_count = isset($attributes['show_count']) ? $attributes['show_count'] : false;
+$terms = gw_get_term_names($term_ids, 'category');
+?>
+<?php if (!empty($terms)): ?>
+    <ul class="category-list">
+        <?php foreach ($terms as $term): ?>
+            <li>
+                <a href="<?php echo esc_url(get_term_link($term['id'])); ?>">
+                    <?php echo esc_html($term['name']); ?>
+                </a>
+                <?php if ($show_count): ?>
+                    <span class="count">(<?php echo get_term($term['id'])->count; ?>)</span>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
 ```
 
 ## Technical Notes
