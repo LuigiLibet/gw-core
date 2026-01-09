@@ -11,22 +11,32 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
-
       - name: Get version from tag
         id: vars
         run: |
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Download ZIP from GitHub Release
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.vars.outputs.VERSION }}
+          fetch-depth: 0
+
+      - name: Create ZIP with correct structure
         run: |
-          curl -L -o gw-core.zip \
-          https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.vars.outputs.VERSION }}.zip
+          # Create a temporary directory for the zip
+          mkdir -p zip-temp
+          # Copy only the files needed for production
+          # Core files
+          cp init.php included-blocks.php manifest.json zip-temp/ 2>/dev/null || true
+          # Copy directories needed for production
+          cp -r gw-custom-blocks zip-temp/ 2>/dev/null || true
+          cp -r included-blocks zip-temp/ 2>/dev/null || true
+          # Create zip from the temp directory contents (not the directory itself)
+          cd zip-temp
+          zip -r ../gw-core.zip .
+          cd ..
+          rm -rf zip-temp
 
       - name: Generate SHA256 checksum
         id: checksum
@@ -34,13 +44,33 @@ jobs:
           HASH=$(sha256sum gw-core.zip | awk '{ print $1 }')
           echo "SHA256=$HASH" >> $GITHUB_OUTPUT
 
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.vars.outputs.VERSION }}
+          files: gw-core.zip
+          body: "Release ${{ steps.vars.outputs.VERSION }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout main branch for manifest update
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update manifest.json
         run: |
           echo "Updating manifest.json..."
+          # Get the release asset URL
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.VERSION }}/gw-core.zip"
           cat > manifest.json <<EOF
           {
             "version": "${{ steps.vars.outputs.VERSION }}",
-            "zip_url": "https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.vars.outputs.VERSION }}.zip",
+            "zip_url": "${RELEASE_URL}",
             "checksum": "sha256:${{ steps.checksum.outputs.SHA256 }}"
           }
           EOF
