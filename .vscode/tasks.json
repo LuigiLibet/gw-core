@@ -1,0 +1,62 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Release: Patch Version (1.2.0 -> 1.2.1)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/release.sh",
+      "args": ["patch"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Release: Minor Version (1.2.0 -> 1.3.0)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/release.sh",
+      "args": ["minor"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Release: Major Version (1.2.0 -> 2.0.0)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/release.sh",
+      "args": ["major"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}
