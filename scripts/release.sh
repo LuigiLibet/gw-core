@@ -87,9 +87,21 @@ echo -e "${GREEN}✓ Tag creado${NC}"
 
 # Hacer push de commits y tags
 echo -e "${GREEN}Haciendo push de commits y tags...${NC}"
-git push origin main
-git push origin "${NEW_TAG}"
-echo -e "${GREEN}✓ Push completado${NC}"
+if git push origin main && git push origin "${NEW_TAG}"; then
+    echo -e "${GREEN}✓ Push completado${NC}"
+else
+    echo ""
+    echo -e "${YELLOW}⚠️  Error de autenticación al hacer push${NC}"
+    echo -e "${YELLOW}El commit y el tag se crearon localmente, pero necesitas autenticarte para hacer push.${NC}"
+    echo ""
+    echo -e "${YELLOW}Para resolver esto:${NC}"
+    echo -e "1. Lee el archivo AUTHENTICATION.md para instrucciones"
+    echo -e "2. O ejecuta manualmente:"
+    echo -e "   ${GREEN}git push origin main${NC}"
+    echo -e "   ${GREEN}git push origin ${NEW_TAG}${NC}"
+    echo ""
+    exit 1
+fi
 
 echo ""
 echo -e "${GREEN}✓ Proceso completado exitosamente!${NC}"
