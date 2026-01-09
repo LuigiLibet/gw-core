@@ -17,8 +17,8 @@ if [ ! -f "manifest.json" ]; then
     exit 1
 fi
 
-# Obtener la versión actual del manifest
-CURRENT_VERSION=$(grep -oP '"version":\s*"\K[^"]+' manifest.json | sed 's/v//')
+# Obtener la versión actual del manifest (compatible con macOS/BSD)
+CURRENT_VERSION=$(grep '"version"' manifest.json | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' | sed 's/v//')
 CURRENT_MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
 CURRENT_MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
 CURRENT_PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
