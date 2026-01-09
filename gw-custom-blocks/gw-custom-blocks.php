@@ -127,6 +127,8 @@ function gw_register_block($slug, $args = array()) {
 		'icon'          => 'block-default',
 		'keywords'      => array(),
 		'editor_styles' => '',
+		'style'         => '',
+		'script'        => '',
 		'fields'        => array(),
 		'ui'            => array(),
 	);
@@ -192,22 +194,50 @@ function gw_register_block($slug, $args = array()) {
 		'ui'        => $args['ui'],
 	);
 
+	// Helper function to normalize asset paths
+	$normalize_asset_path = function($path) {
+		if (empty($path)) {
+			return '';
+		}
+		// If already a full URL (http/https), return as is
+		if (0 === strpos($path, 'http://') || 0 === strpos($path, 'https://')) {
+			return $path;
+		}
+		// If relative path (doesn't start with /), make it theme-relative
+		if (0 !== strpos($path, '/')) {
+			return trailingslashit(get_template_directory_uri()) . ltrim($path, '/');
+		}
+		// If absolute path, convert to URI if it's inside theme
+		$theme_dir = trailingslashit(get_template_directory());
+		if (0 === strpos($path, $theme_dir)) {
+			return str_replace($theme_dir, trailingslashit(get_template_directory_uri()), $path);
+		}
+		// Otherwise return as is (might be absolute path outside theme)
+		return $path;
+	};
+
 	// Prepare editor style handle if provided
 	$editor_style_handle = '';
 	if (!empty($args['editor_styles'])) {
-		$style_src = $args['editor_styles'];
-		if (0 !== strpos($style_src, 'http') && 0 !== strpos($style_src, '/')) {
-			// theme relative path
-			$style_src = trailingslashit(get_template_directory_uri()) . ltrim($style_src, '/');
-		} elseif (0 === strpos($style_src, '/')) {
-			// Convert absolute path under theme to URI if it points inside theme
-			$theme_dir = trailingslashit(get_template_directory());
-			if (0 === strpos($style_src, $theme_dir)) {
-				$style_src = str_replace($theme_dir, trailingslashit(get_template_directory_uri()), $style_src);
-			}
-		}
+		$style_src = $normalize_asset_path($args['editor_styles']);
 		$editor_style_handle = 'gw-custom-blocks-editor-style-' . sanitize_key($slug);
 		wp_register_style($editor_style_handle, $style_src, array(), wp_get_theme()->get('Version'));
+	}
+
+	// Prepare frontend style handle if provided
+	$frontend_style_handle = '';
+	if (!empty($args['style'])) {
+		$style_src = $normalize_asset_path($args['style']);
+		$frontend_style_handle = 'gw-custom-blocks-style-' . sanitize_key($slug);
+		wp_register_style($frontend_style_handle, $style_src, array(), wp_get_theme()->get('Version'));
+	}
+
+	// Prepare frontend script handle if provided
+	$frontend_script_handle = '';
+	if (!empty($args['script'])) {
+		$script_src = $normalize_asset_path($args['script']);
+		$frontend_script_handle = 'gw-custom-blocks-script-' . sanitize_key($slug);
+		wp_register_script($frontend_script_handle, $script_src, array(), wp_get_theme()->get('Version'), true);
 	}
 
 	// Build render callback
@@ -284,6 +314,12 @@ function gw_register_block($slug, $args = array()) {
 	);
 	if ($editor_style_handle) {
 		$register_args['editor_style'] = $editor_style_handle;
+	}
+	if ($frontend_style_handle) {
+		$register_args['style'] = $frontend_style_handle;
+	}
+	if ($frontend_script_handle) {
+		$register_args['script'] = $frontend_script_handle;
 	}
 
 	register_block_type($block_name, $register_args);

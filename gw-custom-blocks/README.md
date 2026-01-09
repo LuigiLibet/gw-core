@@ -95,7 +95,9 @@ Registers a custom block in WordPress.
 | `dir` | string | '' | Base directory for relative paths. Default: `blocks/` |
 | `icon` | string\|array | 'block-default' | Block icon |
 | `keywords` | array | [] | Keywords for the inserter |
-| `editor_styles` | string | '' | Optional path to CSS file for the editor |
+| `editor_styles` | string | '' | Optional path to CSS file to load in editor |
+| `style` | string | '' | Optional path to CSS file to load on frontend when block is present |
+| `script` | string | '' | Optional path to JS file to load on frontend when block is present |
 | `fields` | array | [] | Field/attribute definition |
 | `ui` | array | [] | UI configuration (tabs, toolbar) |
 
@@ -118,6 +120,8 @@ gw_register_block('badge', array(
     ),
     'render' => 'badge/view.php',
     'editor_styles' => 'assets/css/editor.css',
+    'style' => 'assets/css/frontend.css',
+    'script' => 'assets/js/frontend.js',
     'fields' => array(
         'label' => array(
             'type' => 'string',
@@ -1174,6 +1178,34 @@ If you enable support for core features like `anchor` or `customClassName`, the 
 You can load CSS styles specific to the editor using `editor_styles`. The path can be:
 
 - Relative to theme: `'assets/css/editor.css'`
+- Absolute within theme: `/full/path/to/file.css`
+- Full URL: `'https://example.com/styles.css'`
+
+### Frontend Styles and Scripts
+
+You can load CSS and JavaScript files on the frontend that will be automatically enqueued only when the block is present on the page using `style` and `script` parameters. WordPress automatically detects block usage and enqueues these assets.
+
+**Features:**
+- Assets are automatically enqueued only when the block is present
+- No need for custom detection functions
+- Uses WordPress native block asset management
+- Supports the same path formats as `editor_styles`
+
+**Example:**
+
+```php
+gw_register_block('my-block', array(
+    'name' => 'My Block',
+    'render' => 'my-block/view.php',
+    'editor_styles' => 'assets/css/editor.css',  // Editor only
+    'style' => 'assets/css/frontend.css',        // Frontend CSS (auto-enqueued)
+    'script' => 'assets/js/frontend.js',         // Frontend JS (auto-enqueued)
+    'fields' => array(/* ... */),
+));
+```
+
+The paths can be:
+- Relative to theme: `'assets/css/frontend.css'`
 - Absolute within theme: `/full/path/to/file.css`
 - Full URL: `'https://example.com/styles.css'`
 
