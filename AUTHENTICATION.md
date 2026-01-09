@@ -9,6 +9,7 @@
 3. Dale un nombre (ej: "gw-core-releases")
 4. Selecciona los permisos:
    - ✅ `repo` (acceso completo a repositorios privados)
+   - ✅ `workflow` (actualizar archivos de workflow) - **IMPORTANTE si vas a modificar workflows**
 5. Click en "Generate token"
 6. **IMPORTANTE**: Copia el token inmediatamente (solo se muestra una vez)
 
