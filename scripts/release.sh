@@ -17,8 +17,18 @@ if [ ! -f "manifest.json" ]; then
     exit 1
 fi
 
-# Obtener la versión actual del manifest (compatible con macOS/BSD)
-CURRENT_VERSION=$(grep '"version"' manifest.json | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' | sed 's/v//')
+# Obtener la versión actual del último tag de git (más confiable que manifest.json)
+LATEST_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+if [ -z "$LATEST_TAG" ]; then
+    # Si no hay tags, usar el manifest.json como fallback
+    CURRENT_VERSION=$(grep '"version"' manifest.json | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' | sed 's/v//')
+    echo -e "${YELLOW}No se encontraron tags, usando versión del manifest: v${CURRENT_VERSION}${NC}"
+else
+    CURRENT_VERSION=$(echo $LATEST_TAG | sed 's/v//')
+    echo -e "${YELLOW}Último tag encontrado: ${LATEST_TAG}${NC}"
+fi
+
 CURRENT_MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
 CURRENT_MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
 CURRENT_PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
