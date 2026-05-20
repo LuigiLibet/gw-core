@@ -7,6 +7,7 @@
  * - menuId: ID of the menu to display
  * - wrapperTag: HTML tag to wrap menu items (nav or ul)
  * - navId: ID attribute for the wrapper element
+ * - navClass: Custom CSS class for the wrapper element
  * - className: Additional CSS classes
  * - showMobileMenu: Whether to show the mobile menu (boolean)
  */
@@ -22,8 +23,12 @@ $menu_id = isset($attributes['menuId']) && is_numeric($attributes['menuId'])
 	: 0;
 $wrapper_tag = !empty($attributes['wrapperTag']) ? sanitize_key($attributes['wrapperTag']) : 'ul';
 $nav_id = !empty($attributes['navId']) ? sanitize_title_with_dashes($attributes['navId']) : 'custom_menu';
+$nav_class = !empty($attributes['navClass']) ? esc_attr($attributes['navClass']) : '';
 $show_mobile_menu = isset($attributes['showMobileMenu']) ? (bool) $attributes['showMobileMenu'] : true;
 $cls = !empty($attributes['className']) ? esc_attr($attributes['className']) : ($show_mobile_menu ? 'd-none d-lg-flex' : 'd-flex');
+if ($nav_class !== '') {
+	$cls = trim($cls . ' ' . $nav_class);
+}
 
 // Validate wrapper tag - only allow 'nav' or 'ul'
 if (!in_array($wrapper_tag, array('nav', 'ul'), true)) {

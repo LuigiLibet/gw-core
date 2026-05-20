@@ -70,6 +70,12 @@ add_action('init', function(){
 				'label'   => __('Element ID attribute', 'gwblueprint'),
 				'default' => 'custom_menu',
 			),
+			'navClass' => array(
+				'type'    => 'string',
+				'control' => 'text',
+				'label'   => __('Element CSS class', 'gwblueprint'),
+				'default' => '',
+			),
 			'showMobileMenu' => array(
 				'type'    => 'boolean',
 				'control' => 'toggle',
