@@ -540,21 +540,23 @@ function gw_get_gallery_urls($ids_string, $size = 'full') {
 		return array();
 	}
 
-	// Parse comma-separated IDs
-	$ids = array_map('trim', explode(',', $ids_string));
-	$ids = array_filter($ids, function($id) {
-		return is_numeric($id) && $id > 0;
-	});
+	$items = array_filter(array_map('trim', explode(',', $ids_string)));
 
-	if (empty($ids)) {
+	if (empty($items)) {
 		return array();
 	}
 
 	$urls = array();
-	foreach ($ids as $id) {
-		$image_url = wp_get_attachment_image_url((int) $id, $size);
-		if ($image_url) {
-			$urls[] = $image_url;
+	foreach ($items as $item) {
+		if (is_numeric($item) && (int) $item > 0) {
+			// Item is an attachment ID — resolve to URL
+			$image_url = wp_get_attachment_image_url((int) $item, $size);
+			if ($image_url) {
+				$urls[] = $image_url;
+			}
+		} elseif (filter_var($item, FILTER_VALIDATE_URL)) {
+			// Item is already a URL (saveAs: 'url' mode)
+			$urls[] = esc_url_raw($item);
 		}
 	}
 

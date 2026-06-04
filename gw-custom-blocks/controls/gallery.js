@@ -1,7 +1,7 @@
 /* global wp, GWCBlocks */
 (function () {
   'use strict';
-  
+
   if (typeof GWCBlocks === 'undefined' || !GWCBlocks.deps) {
     return;
   }
@@ -19,16 +19,23 @@
     const [images, setImages] = useState([]);
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
+    const saveAs = (field.saveAs || 'id').toLowerCase();
 
-    // Parse value string (comma-separated IDs) to array
+    // Parse value string to array of image objects
     useEffect(() => {
-      const ids = value ? value.split(',').map(id => id.trim()).filter(id => id) : [];
-      if (ids.length === 0) {
+      const items = value ? value.split(',').map(v => v.trim()).filter(v => v) : [];
+      if (items.length === 0) {
         setImages([]);
         return;
       }
 
-      // Fetch image data from WordPress REST API
+      if (saveAs === 'url') {
+        // Values are URLs — set directly without API fetch
+        setImages(items.map(url => ({ id: null, url, alt: '', title: '' })));
+        return;
+      }
+
+      // Default: values are IDs — fetch image data from WordPress REST API
       const fetchImages = async () => {
         try {
           const apiFetch = wp.apiFetch || (window.wp && window.wp.apiFetch);
@@ -37,7 +44,7 @@
             setImages([]);
             return;
           }
-          const imagePromises = ids.map(id => {
+          const imagePromises = items.map(id => {
             return apiFetch({ path: `/wp/v2/media/${id}` }).catch(() => null);
           });
           const imageData = await Promise.all(imagePromises);
@@ -59,10 +66,13 @@
       fetchImages();
     }, [value]);
 
-    // Update value when images change
+    // Update stored value when images change
     const updateValue = (newImages) => {
-      const ids = newImages.map(img => img.id).join(',');
-      onChange(ids);
+      if (saveAs === 'url') {
+        onChange(newImages.map(img => img.url).join(','));
+      } else {
+        onChange(newImages.map(img => img.id).join(','));
+      }
     };
 
     const onSelectImages = (selectedImages) => {
@@ -129,7 +139,7 @@
           onSelect: onSelectImages,
           allowedTypes: ['image'],
           multiple: true,
-          value: images.map(img => img.id),
+          value: images.filter(img => img.id !== null).map(img => img.id),
           gallery: true,
           render: ({ open }) => {
             return wp.element.createElement(Button, {
@@ -147,8 +157,9 @@
         images.map((img, index) => {
           const isDragging = draggedIndex === index;
           const isDragOver = dragOverIndex === index;
+          const itemKey = img.id !== null ? img.id : img.url;
           return wp.element.createElement('div', {
-            key: img.id,
+            key: itemKey,
             className: `gw-custom-blocks-gallery-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`,
             draggable: true,
             onDragStart: (e) => handleDragStart(e, index),
@@ -199,4 +210,3 @@
   // Export control
   GWCBlocks.controls.Gallery = GalleryControl;
 })();
-
