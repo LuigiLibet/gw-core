@@ -131,6 +131,14 @@ function gw_register_block($slug, $args = array()) {
 		'script'        => '',
 		'fields'        => array(),
 		'ui'            => array(),
+		// InnerBlocks configuration (only used by blocks declaring innerBlocks support)
+		'allowedBlocks' => null,   // array of block names to restrict child insertion
+		'template'      => null,   // array template e.g. array(array('gw/slide'))
+		'templateLock'  => null,   // false | 'all' | 'insert'
+		'orientation'   => null,   // 'horizontal' | 'vertical'
+		// Block hierarchy (passed to registerBlockType)
+		'parent'        => null,   // array of block names this block can be inserted into
+		'ancestor'      => null,   // array of block names that must be an ancestor
 	);
 	$args = array_merge($defaults, $args);
 
@@ -192,6 +200,14 @@ function gw_register_block($slug, $args = array()) {
 		'fields'    => $args['fields'],
 		'attributes'=> $attributes,
 		'ui'        => $args['ui'],
+		'parent'    => $args['parent'],
+		'ancestor'  => $args['ancestor'],
+		'innerBlocksConfig' => array(
+			'allowedBlocks' => $args['allowedBlocks'],
+			'template'      => $args['template'],
+			'templateLock'  => $args['templateLock'],
+			'orientation'   => $args['orientation'],
+		),
 	);
 
 	// Helper function to normalize asset paths
@@ -320,6 +336,12 @@ function gw_register_block($slug, $args = array()) {
 	}
 	if ($frontend_script_handle) {
 		$register_args['script'] = $frontend_script_handle;
+	}
+	if (!empty($args['parent'])) {
+		$register_args['parent'] = $args['parent'];
+	}
+	if (!empty($args['ancestor'])) {
+		$register_args['ancestor'] = $args['ancestor'];
 	}
 
 	register_block_type($block_name, $register_args);

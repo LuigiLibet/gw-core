@@ -44,13 +44,22 @@
     const registerBlocks = () => {
       GW_CUSTOM_BLOCKS.blocks.forEach((b) => {
         try {
-          registerBlockType(b.name, {
+          const blockSettings = {
             apiVersion: 2,
             title: b.title || b.name,
             icon: b.icon || 'block-default',
             category: b.category || 'widgets',
             supports: b.supports || {},
             attributes: b.attributes || {},
+          };
+          // Block hierarchy restrictions (e.g. a Slide can only live in a Slider).
+          if (Array.isArray(b.parent) && b.parent.length) {
+            blockSettings.parent = b.parent;
+          }
+          if (Array.isArray(b.ancestor) && b.ancestor.length) {
+            blockSettings.ancestor = b.ancestor;
+          }
+          registerBlockType(b.name, Object.assign(blockSettings, {
             edit: (props) => {
               const { attributes, setAttributes } = props;
               const blockProps = useBlockProps();
@@ -59,18 +68,40 @@
               const inspector = renderInspector(b, attributes, setAttributes, postType);
               const toolbar = renderToolbar(b, attributes, setAttributes);
 
-              // Special handling for link-wrapper: use InnerBlocks for editing
-              if (b.name === 'gw/link-wrapper') {
+              // Blocks declaring InnerBlocks support: render an editable
+              // InnerBlocks area instead of a (non-editable) ServerSideRender.
+              // The wrapper class is derived from the slug so it matches the
+              // class used in the block's view.php (e.g. link-wrapper ->
+              // link_wrapper, searchable-wrapper -> searchable_wrapper).
+              if (b.supports && (b.supports.innerBlocks || b.supports.__experimentalInnerBlocks)) {
+                const slug = b.name.indexOf('/') !== -1 ? b.name.split('/')[1] : b.name;
+                const baseClass = slug.replace(/-/g, '_');
                 const wrapperProps = useBlockProps({
-                  className: 'link_wrapper' + (attributes.className ? ' ' + attributes.className : ''),
+                  className: baseClass + (attributes.className ? ' ' + attributes.className : ''),
                   id: attributes.anchor || undefined,
                 });
+
+                // Optional InnerBlocks config (allowedBlocks, template, etc.)
+                const ibCfg = b.innerBlocksConfig || {};
+                const innerProps = {};
+                if (Array.isArray(ibCfg.allowedBlocks) && ibCfg.allowedBlocks.length) {
+                  innerProps.allowedBlocks = ibCfg.allowedBlocks;
+                }
+                if (Array.isArray(ibCfg.template) && ibCfg.template.length) {
+                  innerProps.template = ibCfg.template;
+                }
+                if (ibCfg.templateLock !== undefined && ibCfg.templateLock !== null) {
+                  innerProps.templateLock = ibCfg.templateLock;
+                }
+                if (ibCfg.orientation) {
+                  innerProps.orientation = ibCfg.orientation;
+                }
 
                 return wp.element.createElement(wp.element.Fragment, {},
                   toolbar,
                   inspector,
                   wp.element.createElement('div', wrapperProps,
-                    wp.element.createElement(InnerBlocks)
+                    wp.element.createElement(InnerBlocks, innerProps)
                   )
                 );
               }
@@ -90,7 +121,7 @@
               }
               return null;
             },
-          });
+          }));
         } catch (e) {
           // eslint-disable-next-line no-console
           console.error('[GW Custom Blocks] Failed to register block', b && b.name, e);
