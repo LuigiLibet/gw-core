@@ -237,6 +237,77 @@ add_action('init', function(){
 		),
 	));
 
+	// Slider block (Swiper) — parent. Only accepts Slide blocks as children.
+	gw_register_block('slider', array(
+		'name'     => __('Slider', 'gwblueprint'),
+		'category' => 'custom',
+		'icon'     => 'images-alt2',
+		'supports' => array(
+			'anchor' => true,
+			'customClassName' => true,
+			'__experimentalInnerBlocks' => true,
+			'innerBlocks' => true,
+			'align' => array('wide', 'full'),
+			'spacing' => array(
+				'margin' => true,
+				'padding' => true,
+			),
+		),
+		// Restrict children to Slide blocks and seed one empty slide.
+		'allowedBlocks' => array('gw/slide'),
+		'template'      => array(array('gw/slide')),
+		'render'   => 'slider/view.php',
+		'dir'      => 'gw/gw-core/included-blocks',
+		'fields'   => array(
+			'spvMobile'  => array('type'=>'number','control'=>'number','label'=>__('Slides per view (mobile)','gwblueprint'),'default'=>1,'min'=>1,'step'=>1),
+			'spvTablet'  => array('type'=>'number','control'=>'number','label'=>__('Slides per view (tablet ≥768px)','gwblueprint'),'default'=>2,'min'=>1,'step'=>1),
+			'spvDesktop' => array('type'=>'number','control'=>'number','label'=>__('Slides per view (desktop ≥1024px)','gwblueprint'),'default'=>3,'min'=>1,'step'=>1),
+			'spaceBetween' => array('type'=>'number','control'=>'number','label'=>__('Space between (px)','gwblueprint'),'default'=>24,'min'=>0,'step'=>1),
+			'speed'      => array('type'=>'number','control'=>'number','label'=>__('Transition speed (ms)','gwblueprint'),'default'=>500,'min'=>0,'step'=>50),
+			'centered'   => array('type'=>'boolean','control'=>'toggle','label'=>__('Centered slides','gwblueprint'),'default'=>false),
+			'loop'       => array('type'=>'boolean','control'=>'toggle','label'=>__('Loop','gwblueprint'),'default'=>false),
+			'autoplay'   => array('type'=>'boolean','control'=>'toggle','label'=>__('Autoplay','gwblueprint'),'default'=>false),
+			'autoplayDelay' => array('type'=>'number','control'=>'number','label'=>__('Autoplay delay (ms)','gwblueprint'),'default'=>4000,'min'=>500,'step'=>250),
+			'showArrows' => array('type'=>'boolean','control'=>'toggle','label'=>__('Show arrows','gwblueprint'),'default'=>true),
+			'showPagination' => array('type'=>'boolean','control'=>'toggle','label'=>__('Show pagination dots','gwblueprint'),'default'=>true),
+		),
+		'ui' => array(
+			'tabs' => array(
+				array('name'=>'layout','title'=>__('Layout','gwblueprint'),'fields'=>array('spvMobile','spvTablet','spvDesktop','spaceBetween','centered','speed')),
+				array('name'=>'autoplay','title'=>__('Autoplay & Loop','gwblueprint'),'fields'=>array('loop','autoplay','autoplayDelay')),
+				array('name'=>'nav','title'=>__('Navigation','gwblueprint'),'fields'=>array('showArrows','showPagination')),
+			),
+		),
+	));
+
+	// Slide block — child of Slider. Accepts any blocks inside.
+	gw_register_block('slide', array(
+		'name'     => __('Slide', 'gwblueprint'),
+		'category' => 'custom',
+		'icon'     => 'slides',
+		'supports' => array(
+			'anchor' => true,
+			'customClassName' => true,
+			'__experimentalInnerBlocks' => true,
+			'innerBlocks' => true,
+			'color' => array(
+				'text' => true,
+				'background' => true,
+				'gradients' => true,
+			),
+			'spacing' => array(
+				'margin' => true,
+				'padding' => true,
+				'blockGap' => true,
+			),
+		),
+		// Only insertable inside a Slider.
+		'parent'   => array('gw/slider'),
+		'render'   => 'slide/view.php',
+		'dir'      => 'gw/gw-core/included-blocks',
+		'fields'   => array(),
+	));
+
 	// All Settings Check block (demo block)
 	gw_register_block('all-settings-check', array(
 		'name'     => __('All Settings Check', 'gwblueprint'),
@@ -391,5 +462,33 @@ add_action('init', function(){
 			),
 		),
 	));
+});
+
+/**
+ * Register SwiperJS (CDN) for the Slider block.
+ *
+ * Registered here and enqueued on demand: pre-enqueued on singular views that
+ * contain a Slider block (so CSS lands in <head>), and also enqueued from the
+ * Slider's view.php as a fallback for any other context. Both are idempotent.
+ */
+add_action('wp_enqueue_scripts', function () {
+	wp_register_style(
+		'swiper',
+		'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+		array(),
+		'11'
+	);
+	wp_register_script(
+		'swiper',
+		'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+		array(),
+		'11',
+		true
+	);
+
+	if (is_singular() && function_exists('has_block') && has_block('gw/slider')) {
+		wp_enqueue_style('swiper');
+		wp_enqueue_script('swiper');
+	}
 });
 
