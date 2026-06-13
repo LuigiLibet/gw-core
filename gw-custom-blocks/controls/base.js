@@ -13,6 +13,10 @@
     ToggleControl,
     SelectControl,
     ColorPalette,
+    Icon,
+    ToggleGroupControl,
+    ToggleGroupControlOption,
+    ToggleGroupControlOptionIcon,
   } = GWCBlocks.deps;
   const { getEditorColors } = GWCBlocks.utils;
   const { useEntityProp } = GWCBlocks.deps;
@@ -95,6 +99,48 @@
             onChange(converted);
           },
         });
+      }
+      case 'pills':
+      case 'buttongroup': {
+        const options = (field.options || []).map((opt) => {
+          if (typeof opt === 'object' && opt) {
+            return { label: opt.label || String(opt.value), value: opt.value, icon: opt.icon || null };
+          }
+          return { label: String(opt), value: opt, icon: null };
+        });
+        // Graceful fallback to a select if ToggleGroupControl isn't available
+        if (!ToggleGroupControl || !ToggleGroupControlOption) {
+          const normalizedValue = value != null ? value : (field.default != null ? field.default : '');
+          return wp.element.createElement(SelectControl, {
+            label,
+            value: normalizedValue,
+            options: [{ label: '—', value: '' }].concat(options.map((o) => ({ label: o.label, value: o.value }))),
+            onChange,
+          });
+        }
+        const useIcons = !!ToggleGroupControlOptionIcon && options.some((o) => o.icon);
+        // ToggleGroupControl treats undefined (not '') as "nothing selected"
+        const current = (value === '' || value == null) ? undefined : value;
+        return wp.element.createElement(ToggleGroupControl, {
+          label,
+          value: current,
+          isBlock: true,
+          isDeselectable: true,
+          __nextHasNoMarginBottom: true,
+          onChange: (v) => onChange(v == null ? '' : v),
+        }, options.map((opt) => (useIcons && opt.icon)
+          ? wp.element.createElement(ToggleGroupControlOptionIcon, {
+              key: String(opt.value),
+              value: opt.value,
+              label: opt.label,
+              icon: Icon ? wp.element.createElement(Icon, { icon: opt.icon }) : opt.icon,
+            })
+          : wp.element.createElement(ToggleGroupControlOption, {
+              key: String(opt.value),
+              value: opt.value,
+              label: opt.label,
+            })
+        ));
       }
       case 'color': {
         const colors = getEditorColors();

@@ -77,7 +77,7 @@ if ($enabled['email']) {
 
 if (empty($links)) return;
 ?>
-<nav class="share_icons d-flex<?php echo $cls; ?>">
+<nav class="share_icons<?php echo $cls; ?>">
   <?php foreach ($links as $key => $data): ?>
     <a href="<?php echo esc_url($data['href']); ?>"<?php echo $target.$rel_attr; ?> aria-label="<?php echo esc_attr('Share on '.$data['label']); ?>">
       <i class="icon-<?php echo esc_attr($data['icon']); ?>"></i>

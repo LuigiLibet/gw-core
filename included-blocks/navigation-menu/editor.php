@@ -12,17 +12,26 @@ $menu_id = isset($attributes['menuId']) && is_numeric($attributes['menuId'])
 	? (int) $attributes['menuId']
 	: 0;
 $wrapper_tag = !empty($attributes['wrapperTag']) ? sanitize_key($attributes['wrapperTag']) : 'ul';
-$nav_id = !empty($attributes['navId']) ? sanitize_title_with_dashes($attributes['navId']) : 'custom_menu';
-$nav_class = !empty($attributes['navClass']) ? esc_attr($attributes['navClass']) : '';
+$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : 'custom_menu';
 $show_mobile_menu = isset($attributes['showMobileMenu']) ? (bool) $attributes['showMobileMenu'] : true;
-$cls = !empty($attributes['className']) ? esc_attr($attributes['className']) : ($show_mobile_menu ? 'd-none d-lg-flex' : 'd-flex');
-if ($nav_class !== '') {
-	$cls = trim($cls . ' ' . $nav_class);
-}
+// Editor preview always shows the inline menu (no responsive collapse, no trigger here),
+// so the desktop layout stays visible regardless of the editor canvas width.
+$base_cls = 'gw-nav';
+$extra_cls = !empty($attributes['className']) ? esc_attr($attributes['className']) : '';
+$cls = trim($base_cls . ' ' . $extra_cls);
 
 if (!in_array($wrapper_tag, array('nav', 'ul'), true)) {
 	$wrapper_tag = 'ul';
 }
+
+$styles = array();
+if (!empty($attributes['flexDirection']) && in_array($attributes['flexDirection'], array('row', 'column'), true)) {
+	$styles[] = 'flex-direction:' . $attributes['flexDirection'];
+}
+if (!empty($attributes['justifyContent']) && in_array($attributes['justifyContent'], array('flex-start', 'center', 'flex-end', 'space-between'), true)) {
+	$styles[] = 'justify-content:' . $attributes['justifyContent'];
+}
+$style_attr = !empty($styles) ? ' style="' . esc_attr(implode(';', $styles)) . '"' : '';
 
 if (!isset($attributes['menuId']) || $menu_id <= 0) {
 	echo '<div class="components-placeholder">';
@@ -56,7 +65,7 @@ if (!class_exists('GW_Nav_Menu_Editor_Walker')) {
 	}
 }
 
-$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '" class="' . esc_attr($cls) . '">';
+$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '" class="' . esc_attr($cls) . '"' . $style_attr . '>';
 $closing_tag = '</' . $wrapper_tag . '>';
 $items_wrap = $opening_tag . '%3$s' . $closing_tag;
 

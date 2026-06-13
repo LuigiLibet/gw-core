@@ -25,6 +25,10 @@
     Button,
     ComboboxControl,
     Spinner,
+    Icon,
+    __experimentalToggleGroupControl: ToggleGroupControl,
+    __experimentalToggleGroupControlOption: ToggleGroupControlOption,
+    __experimentalToggleGroupControlOptionIcon: ToggleGroupControlOptionIcon,
   } = wp.components;
   const ServerSideRender = (wp.serverSideRender && wp.serverSideRender.default) || wp.serverSideRender;
   const { useEntityProp } = wp.coreData || {};
@@ -56,6 +60,10 @@
     Button,
     ComboboxControl,
     Spinner,
+    Icon,
+    ToggleGroupControl,
+    ToggleGroupControlOption,
+    ToggleGroupControlOptionIcon,
     ServerSideRender,
     useEntityProp,
     dataSelect,

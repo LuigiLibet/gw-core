@@ -114,7 +114,10 @@ function gw_in_editor() {
  *  - keywords (array): Inserter keywords
  *  - editor_styles (string): Optional CSS file path to load in editor
  *  - fields (array): Attribute/controls spec. Each key is attribute name.
- *      Support: control types text, textarea, color, range, number, toggle, select, gallery, image, repeater, icon_picker
+ *      Support: control types text, textarea, color, range, number, toggle, select, buttongroup, gallery, image, repeater, icon_picker
+ *      'buttongroup' renders pill-style segmented buttons (WP ToggleGroupControl). It is
+ *      deselectable (click the active pill to clear back to ''). Each option may include an
+ *      'icon' (dashicon slug) to render icon pills like the core Group/Row block.
  */
 function gw_register_block($slug, $args = array()) {
 	$defaults = array(

@@ -1,0 +1,29 @@
+/**
+ * GW Navigation Menu — self-contained layout.
+ * Replaces the previous Bootstrap utility classes (d-flex / d-none / d-lg-flex)
+ * so the block works without any CSS framework. The theme can override freely.
+ *
+ * Breakpoint 992px mirrors Bootstrap's `lg` so existing sites don't shift.
+ */
+
+/* Inline (desktop) menu list */
+.gw-nav {
+	display: flex;
+}
+
+/* Hamburger trigger: hidden on desktop, shown on mobile */
+.gw-nav__trigger {
+	display: none;
+	cursor: pointer;
+}
+
+/* Below the desktop breakpoint, collapse the inline menu and reveal the trigger */
+@media (max-width: 991.98px) {
+	.gw-nav--collapsible {
+		display: none;
+	}
+
+	.gw-nav__trigger {
+		display: flex;
+	}
+}
