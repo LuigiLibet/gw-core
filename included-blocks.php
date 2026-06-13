@@ -46,6 +46,7 @@ add_action('init', function(){
 		),
 		'render'   => 'navigation-menu/view.php',
 		'dir'      => 'gw/gw-core/included-blocks',
+		'style'    => 'gw/gw-core/included-blocks/navigation-menu/style.css',
 		'fields'   => array(
 			'menuId' => array(
 				'type'    => 'integer',
@@ -64,17 +65,27 @@ add_action('init', function(){
 					array('label' => '<nav>', 'value' => 'nav'),
 				),
 			),
-			'navId' => array(
+			'flexDirection' => array(
 				'type'    => 'string',
-				'control' => 'text',
-				'label'   => __('Element ID attribute', 'gwblueprint'),
-				'default' => 'custom_menu',
-			),
-			'navClass' => array(
-				'type'    => 'string',
-				'control' => 'text',
-				'label'   => __('Element CSS class', 'gwblueprint'),
+				'control' => 'buttongroup',
+				'label'   => __('Direction', 'gwblueprint'),
 				'default' => '',
+				'options' => array(
+					array('label' => __('Row', 'gwblueprint'),    'value' => 'row',    'icon' => 'arrow-right-alt2'),
+					array('label' => __('Column', 'gwblueprint'), 'value' => 'column', 'icon' => 'arrow-down-alt2'),
+				),
+			),
+			'justifyContent' => array(
+				'type'    => 'string',
+				'control' => 'buttongroup',
+				'label'   => __('Horizontal alignment', 'gwblueprint'),
+				'default' => '',
+				'options' => array(
+					array('label' => __('Start', 'gwblueprint'),         'value' => 'flex-start',    'icon' => 'editor-alignleft'),
+					array('label' => __('Center', 'gwblueprint'),        'value' => 'center',        'icon' => 'editor-aligncenter'),
+					array('label' => __('End', 'gwblueprint'),           'value' => 'flex-end',      'icon' => 'editor-alignright'),
+					array('label' => __('Space between', 'gwblueprint'), 'value' => 'space-between', 'icon' => 'align-full-width'),
+				),
 			),
 			'showMobileMenu' => array(
 				'type'    => 'boolean',
@@ -96,6 +107,7 @@ add_action('init', function(){
 		),
 		'render'   => 'share-icons/view.php',
 		'dir'      => 'gw/gw-core/included-blocks',
+		'style'    => 'gw/gw-core/included-blocks/share-icons/style.css',
 		'fields'   => array(
 			// Networks
 			'facebook' => array('type'=>'boolean','control'=>'toggle','label'=>__('Facebook','gwblueprint'),'default'=>true),
@@ -471,18 +483,24 @@ add_action('init', function(){
  * contain a Slider block (so CSS lands in <head>), and also enqueued from the
  * Slider's view.php as a fallback for any other context. Both are idempotent.
  */
+// Pinned version + Subresource Integrity hashes (from cdnjs) so a compromised CDN
+// cannot inject altered code into client sites. Update all three together on bump.
+define('GW_SWIPER_VERSION', '11.0.5');
+define('GW_SWIPER_SRI_JS',  'sha512-Ysw1DcK1P+uYLqprEAzNQJP+J4hTx4t/3X2nbVwszao8wD+9afLjBQYjz7Uk4ADP+Er++mJoScI42ueGtQOzEA==');
+define('GW_SWIPER_SRI_CSS', 'sha512-rd0qOHVMOcez6pLWPVFIv7EfSdGKLt+eafXh4RO/12Fgr41hDQxfGvoi1Vy55QIVcQEujUE1LQrATCLl2Fs+ag==');
+
 add_action('wp_enqueue_scripts', function () {
 	wp_register_style(
 		'swiper',
-		'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+		'https://cdnjs.cloudflare.com/ajax/libs/Swiper/' . GW_SWIPER_VERSION . '/swiper-bundle.min.css',
 		array(),
-		'11'
+		GW_SWIPER_VERSION
 	);
 	wp_register_script(
 		'swiper',
-		'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+		'https://cdnjs.cloudflare.com/ajax/libs/Swiper/' . GW_SWIPER_VERSION . '/swiper-bundle.min.js',
 		array(),
-		'11',
+		GW_SWIPER_VERSION,
 		true
 	);
 
@@ -491,4 +509,28 @@ add_action('wp_enqueue_scripts', function () {
 		wp_enqueue_script('swiper');
 	}
 });
+
+// Add integrity + crossorigin attributes to the Swiper <script>/<link> tags
+// (wp_register_script/style do not support SRI natively).
+add_filter('script_loader_tag', function ($tag, $handle) {
+	if ('swiper' !== $handle) {
+		return $tag;
+	}
+	return str_replace(
+		' src=',
+		' integrity="' . esc_attr(GW_SWIPER_SRI_JS) . '" crossorigin="anonymous" src=',
+		$tag
+	);
+}, 10, 2);
+
+add_filter('style_loader_tag', function ($tag, $handle) {
+	if ('swiper' !== $handle) {
+		return $tag;
+	}
+	return str_replace(
+		' href=',
+		' integrity="' . esc_attr(GW_SWIPER_SRI_CSS) . '" crossorigin="anonymous" href=',
+		$tag
+	);
+}, 10, 2);
 

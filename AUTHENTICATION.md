@@ -1,6 +1,12 @@
 # Configuración de Autenticación para GitHub
 
-## Opción 1: Personal Access Token (PAT) - Recomendado
+> **Recomendación actual (más segura):** usa la **GitHub CLI** (`gh auth login`) o el
+> **credential helper de macOS** (`git config --global credential.helper osxkeychain`).
+> Ambos guardan el token en el llavero del sistema y evitan exponerlo en la línea de
+> comandos o en el historial del shell. El flujo manual de abajo y
+> `scripts/push-with-token.sh` se conservan solo como fallback.
+
+## Opción 1: Personal Access Token (PAT)
 
 ### Paso 1: Crear un Personal Access Token
 

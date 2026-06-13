@@ -6,9 +6,10 @@
  * Attributes:
  * - menuId: ID of the menu to display
  * - wrapperTag: HTML tag to wrap menu items (nav or ul)
- * - navId: ID attribute for the wrapper element
- * - navClass: Custom CSS class for the wrapper element
- * - className: Additional CSS classes
+ * - anchor: native WordPress "HTML anchor" -> wrapper id (falls back to 'custom_menu')
+ * - className: native WordPress "Additional CSS class(es)" -> appended to the wrapper
+ * - flexDirection: optional flex-direction for the wrapper (row|column)
+ * - justifyContent: optional justify-content for the wrapper (flex-start|center|flex-end|space-between)
  * - showMobileMenu: Whether to show the mobile menu (boolean)
  */
 
@@ -22,21 +23,33 @@ $menu_id = isset($attributes['menuId']) && is_numeric($attributes['menuId'])
 	? (int) $attributes['menuId'] 
 	: 0;
 $wrapper_tag = !empty($attributes['wrapperTag']) ? sanitize_key($attributes['wrapperTag']) : 'ul';
-$nav_id = !empty($attributes['navId']) ? sanitize_title_with_dashes($attributes['navId']) : 'custom_menu';
-$nav_class = !empty($attributes['navClass']) ? esc_attr($attributes['navClass']) : '';
+// Native WP "HTML anchor" -> wrapper id (keep 'custom_menu' fallback so mobile menu + theme CSS keep working)
+$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : 'custom_menu';
 $show_mobile_menu = isset($attributes['showMobileMenu']) ? (bool) $attributes['showMobileMenu'] : true;
-$cls = !empty($attributes['className']) ? esc_attr($attributes['className']) : ($show_mobile_menu ? 'd-none d-lg-flex' : 'd-flex');
-if ($nav_class !== '') {
-	$cls = trim($cls . ' ' . $nav_class);
-}
+// Functional base classes (self-contained, styled by style.css — no Bootstrap dependency)
+// + native "Additional CSS class(es)" appended on top.
+$base_cls = $show_mobile_menu ? 'gw-nav gw-nav--collapsible' : 'gw-nav';
+$extra_cls = !empty($attributes['className']) ? esc_attr($attributes['className']) : '';
+$cls = trim($base_cls . ' ' . $extra_cls);
 
 // Validate wrapper tag - only allow 'nav' or 'ul'
 if (!in_array($wrapper_tag, array('nav', 'ul'), true)) {
 	$wrapper_tag = 'ul';
 }
 
-// Detect if we're in editor context
-$is_editor = defined('REST_REQUEST') && REST_REQUEST;
+// Optional flex layout (pill controls). Applied inline so it composes with the base classes
+// without forcing display (which would override the responsive collapse on mobile).
+$styles = array();
+if (!empty($attributes['flexDirection']) && in_array($attributes['flexDirection'], array('row', 'column'), true)) {
+	$styles[] = 'flex-direction:' . $attributes['flexDirection'];
+}
+if (!empty($attributes['justifyContent']) && in_array($attributes['justifyContent'], array('flex-start', 'center', 'flex-end', 'space-between'), true)) {
+	$styles[] = 'justify-content:' . $attributes['justifyContent'];
+}
+$style_attr = !empty($styles) ? ' style="' . esc_attr(implode(';', $styles)) . '"' : '';
+
+// Detect if we're in editor context (robust check shared across the framework).
+$is_editor = function_exists('gw_in_editor') ? gw_in_editor() : (defined('REST_REQUEST') && REST_REQUEST);
 
 // Error handling: No menu selected
 if (!isset($attributes['menuId']) || $menu_id <= 0) {
@@ -57,7 +70,7 @@ $menu_obj = wp_get_nav_menu_object($menu_id);
 // Error handling: Menu was deleted or doesn't exist
 if (!$menu_obj || is_wp_error($menu_obj)) {
 	// Editor preview: show error message
-	if (defined('REST_REQUEST') && REST_REQUEST) {
+	if ($is_editor) {
 		echo '<div class="components-placeholder">';
 		echo '<div class="components-placeholder__label">' . esc_html__('Navigation Menu', 'gwblueprint') . '</div>';
 		echo '<div class="components-placeholder__instructions" style="color: #d63638;">';
@@ -70,7 +83,7 @@ if (!$menu_obj || is_wp_error($menu_obj)) {
 }
 
 // Build items_wrap based on selected wrapper tag
-$opening_tag = '<' . $wrapper_tag . ' id="' . $nav_id . '" class="' . $cls . '">';
+$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '" class="' . esc_attr($cls) . '"' . $style_attr . '>';
 $closing_tag = '</' . $wrapper_tag . '>';
 $items_wrap = $opening_tag . '%3$s' . $closing_tag;
 
@@ -85,12 +98,12 @@ wp_nav_menu(array(
 
 // Render mobile menu only if enabled
 if ($show_mobile_menu) {
-	$opening_tag = '<' . $wrapper_tag . ' id="' . $nav_id . '_mobile">';
+	$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '_mobile">';
 	$closing_tag = '</' . $wrapper_tag . '>';
 	$items_wrap = $opening_tag . '%3$s' . $closing_tag;
 
 	?>
-	<span id="menu_trigger" class="d-flex d-lg-none"><i></i></span>
+	<span id="menu_trigger" class="gw-nav__trigger"><i></i></span>
 	
 	<div id="mobile_menu_container">
 		<?php

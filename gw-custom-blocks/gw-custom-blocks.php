@@ -627,14 +627,13 @@ function gw_get_repeater_items($serialized_string) {
 		}
 	}
 
-	// Fallback to PHP unserialize
-	if (function_exists('unserialize')) {
-		// Check if it looks like PHP serialized data
-		if (strpos($trimmed, 'a:') === 0 || strpos($trimmed, 'O:') === 0) {
-			$unserialized = @unserialize($trimmed);
-			if ($unserialized !== false && is_array($unserialized)) {
-				return $unserialized;
-			}
+	// Fallback to PHP unserialize for legacy data.
+	// Only accept serialized arrays ('a:'); never objects ('O:'), and forbid
+	// class instantiation to prevent PHP Object Injection (POP gadget chains).
+	if (function_exists('unserialize') && strpos($trimmed, 'a:') === 0) {
+		$unserialized = @unserialize($trimmed, array('allowed_classes' => false));
+		if ($unserialized !== false && is_array($unserialized)) {
+			return $unserialized;
 		}
 	}
 

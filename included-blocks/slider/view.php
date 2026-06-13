@@ -46,7 +46,10 @@ $autoplay_dly = isset($attributes['autoplayDelay']) ? (int) $attributes['autopla
 $arrows       = !isset($attributes['showArrows']) || !empty($attributes['showArrows']);
 $pagination   = !isset($attributes['showPagination']) || !empty($attributes['showPagination']);
 
-$uid = 'gw_slider_' . uniqid();
+// Stable, collision-free per-page id (Swiper init targets the .gw-slider class,
+// so this id is only a unique anchor — no need for uniqid()).
+static $gw_slider_seq = 0;
+$uid = 'gw_slider_' . ( ++$gw_slider_seq );
 
 $wrapper_attributes = get_block_wrapper_attributes(array(
     'class'                  => 'swiper gw-slider',

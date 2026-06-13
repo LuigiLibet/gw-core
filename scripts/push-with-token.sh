@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# ⚠️  AVISO DE SEGURIDAD
+# Pasar el token como argumento lo deja en el historial del shell (~/.zsh_history,
+# ~/.bash_history) y en la lista de procesos. Prefiere uno de estos métodos:
+#   - GitHub CLI:        gh auth login   (luego: git push)
+#   - Credential helper: git config --global credential.helper osxkeychain
+# Este script se conserva solo como fallback puntual. Ver AUTHENTICATION.md.
+#
 # Script para hacer push usando un token de GitHub
 # Uso: ./scripts/push-with-token.sh TU_TOKEN_AQUI
 
