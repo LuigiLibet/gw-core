@@ -23,8 +23,9 @@ $menu_id = isset($attributes['menuId']) && is_numeric($attributes['menuId'])
 	? (int) $attributes['menuId'] 
 	: 0;
 $wrapper_tag = !empty($attributes['wrapperTag']) ? sanitize_key($attributes['wrapperTag']) : 'ul';
-// Native WP "HTML anchor" -> wrapper id (keep 'custom_menu' fallback so mobile menu + theme CSS keep working)
-$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : 'custom_menu';
+// Native WP "HTML anchor" -> wrapper id. Only emit an id when the user actually set
+// one; leaving the native field empty must NOT inject a default id (e.g. 'custom_menu').
+$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : '';
 $show_mobile_menu = isset($attributes['showMobileMenu']) ? (bool) $attributes['showMobileMenu'] : true;
 // Functional base classes (self-contained, styled by style.css — no Bootstrap dependency)
 // + native "Additional CSS class(es)" appended on top.
@@ -82,8 +83,9 @@ if (!$menu_obj || is_wp_error($menu_obj)) {
 	return;
 }
 
-// Build items_wrap based on selected wrapper tag
-$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '" class="' . esc_attr($cls) . '"' . $style_attr . '>';
+// Build items_wrap based on selected wrapper tag (id only when an anchor was set)
+$id_attr = $nav_id !== '' ? ' id="' . esc_attr($nav_id) . '"' : '';
+$opening_tag = '<' . $wrapper_tag . $id_attr . ' class="' . esc_attr($cls) . '"' . $style_attr . '>';
 $closing_tag = '</' . $wrapper_tag . '>';
 $items_wrap = $opening_tag . '%3$s' . $closing_tag;
 
@@ -98,7 +100,8 @@ wp_nav_menu(array(
 
 // Render mobile menu only if enabled
 if ($show_mobile_menu) {
-	$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '_mobile">';
+	$mobile_id_attr = $nav_id !== '' ? ' id="' . esc_attr($nav_id . '_mobile') . '"' : '';
+	$opening_tag = '<' . $wrapper_tag . $mobile_id_attr . '>';
 	$closing_tag = '</' . $wrapper_tag . '>';
 	$items_wrap = $opening_tag . '%3$s' . $closing_tag;
 

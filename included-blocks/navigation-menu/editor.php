@@ -12,7 +12,7 @@ $menu_id = isset($attributes['menuId']) && is_numeric($attributes['menuId'])
 	? (int) $attributes['menuId']
 	: 0;
 $wrapper_tag = !empty($attributes['wrapperTag']) ? sanitize_key($attributes['wrapperTag']) : 'ul';
-$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : 'custom_menu';
+$nav_id = !empty($attributes['anchor']) ? sanitize_title_with_dashes($attributes['anchor']) : '';
 $show_mobile_menu = isset($attributes['showMobileMenu']) ? (bool) $attributes['showMobileMenu'] : true;
 // Editor preview always shows the inline menu (no responsive collapse, no trigger here),
 // so the desktop layout stays visible regardless of the editor canvas width.
@@ -65,7 +65,8 @@ if (!class_exists('GW_Nav_Menu_Editor_Walker')) {
 	}
 }
 
-$opening_tag = '<' . $wrapper_tag . ' id="' . esc_attr($nav_id) . '" class="' . esc_attr($cls) . '"' . $style_attr . '>';
+$id_attr = $nav_id !== '' ? ' id="' . esc_attr($nav_id) . '"' : '';
+$opening_tag = '<' . $wrapper_tag . $id_attr . ' class="' . esc_attr($cls) . '"' . $style_attr . '>';
 $closing_tag = '</' . $wrapper_tag . '>';
 $items_wrap = $opening_tag . '%3$s' . $closing_tag;
 
