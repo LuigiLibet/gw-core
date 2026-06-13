@@ -6,7 +6,7 @@
  * Attributes:
  * - menuId: ID of the menu to display
  * - wrapperTag: HTML tag to wrap menu items (nav or ul)
- * - anchor: native WordPress "HTML anchor" -> wrapper id (falls back to 'custom_menu')
+ * - anchor: native WordPress "HTML anchor" -> wrapper id (no id emitted when left empty)
  * - className: native WordPress "Additional CSS class(es)" -> appended to the wrapper
  * - flexDirection: optional flex-direction for the wrapper (row|column)
  * - justifyContent: optional justify-content for the wrapper (flex-start|center|flex-end|space-between)
