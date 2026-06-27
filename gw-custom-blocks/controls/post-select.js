@@ -118,8 +118,15 @@
       mergedOptions = [selectedOption, ...options];
     }
 
+    // ComboboxControl fija el label mostrado AL MONTAR; nuestra opción guardada llega
+    // async (la precargamos por ID), así que el control ya se pintó vacío y no refresca.
+    // Forzamos un remount puntual cuando el value ya resuelve a una opción, vía key.
+    const valueResolved = !valueStr || mergedOptions.some(opt => opt.value === valueStr);
+    const comboKey = valueResolved ? ('gwps-' + valueStr) : 'gwps-pending';
+
     return wp.element.createElement('div', { className: 'gw-custom-blocks-post-select-control' },
       wp.element.createElement(ComboboxControl, {
+        key: comboKey,
         label: label,
         value: valueStr, // Ensure value is string
         onChange: (newValue) => {
