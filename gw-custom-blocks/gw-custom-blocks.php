@@ -388,8 +388,19 @@ function gw_custom_blocks_bootstrap_editor_script() {
 
 	$theme_uri = trailingslashit(get_template_directory_uri());
 	$base_path = $theme_uri . 'gw/gw-core/gw-custom-blocks/';
-	$version = wp_get_theme()->get('Version');
-	
+	// Filesystem counterpart of $base_path, used to cachebust each asset by its own
+	// mtime. The editor scripts (incl. controls/post-select.js) had NO real version
+	// busting — they inherited the theme Version, so edits to gw-core JS were served
+	// stale from cache until the theme header changed. Deriving the version from
+	// filemtime() makes any JS edit invalidate the cached copy on the next editor load.
+	$base_dir = trailingslashit(get_template_directory()) . 'gw/gw-core/gw-custom-blocks/';
+	$theme_version = wp_get_theme()->get('Version');
+	$ver = function($rel) use ($base_dir, $theme_version) {
+		$file = $base_dir . $rel;
+		$mtime = @filemtime($file);
+		return $mtime ? (string) $mtime : $theme_version;
+	};
+
 	// Dependencies base de WordPress
 	$wp_deps = array('wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 
 	                 'wp-block-editor', 'wp-server-side-render', 'wp-data', 
@@ -400,7 +411,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-utils',
 		$base_path . 'lib/utils.js',
 		$wp_deps,
-		$version,
+		$ver('lib/utils.js'),
 		true
 	);
 	
@@ -409,7 +420,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-deps',
 		$base_path . 'lib/dependencies.js',
 		array_merge($wp_deps, array('gw-custom-blocks-utils')),
-		$version,
+		$ver('lib/dependencies.js'),
 		true
 	);
 	
@@ -428,7 +439,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 			"gw-custom-blocks-control-{$control}",
 			$base_path . "controls/{$control}.js",
 			$control_deps,
-			$version,
+			$ver("controls/{$control}.js"),
 			true
 		);
 	}
@@ -442,7 +453,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-controls-base',
 		$base_path . 'controls/base.js',
 		$base_control_deps,
-		$version,
+		$ver('controls/base.js'),
 		true
 	);
 	
@@ -451,7 +462,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-ui',
 		$base_path . 'core/ui.js',
 		array('gw-custom-blocks-controls-base'),
-		$version,
+		$ver('core/ui.js'),
 		true
 	);
 	
@@ -460,7 +471,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-registry',
 		$base_path . 'core/block-registry.js',
 		array('gw-custom-blocks-ui'),
-		$version,
+		$ver('core/block-registry.js'),
 		true
 	);
 	
@@ -469,13 +480,13 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		'gw-custom-blocks-editor',
 		$base_path . 'gw-custom-blocks.js',
 		array('gw-custom-blocks-registry'),
-		$version,
+		$ver('gw-custom-blocks.js'),
 		true
 	);
 
 	// Register editor styles for gallery control (will be enqueued via hook)
 	$style_uri = $base_path . 'gw-custom-blocks.css';
-	wp_register_style('gw-custom-blocks-editor-styles', $style_uri, array(), $version);
+	wp_register_style('gw-custom-blocks-editor-styles', $style_uri, array(), $ver('gw-custom-blocks.css'));
 
 	// Localize initial registry
 	gw_custom_blocks_update_localization();
@@ -808,6 +819,15 @@ function gw_custom_blocks_register_rest_routes() {
 				'default' => 10,
 				'sanitize_callback' => 'absint',
 			),
+			'include' => array(
+				'default' => array(),
+				'sanitize_callback' => function($param) {
+					if (is_string($param)) {
+						$param = explode(',', $param);
+					}
+					return array_map('absint', (array) $param);
+				},
+			),
 		),
 	));
 
@@ -877,6 +897,7 @@ function gw_custom_blocks_rest_search_posts($request) {
 	$post_type = $request->get_param('type');
 	$search = $request->get_param('search');
 	$per_page = $request->get_param('per_page');
+	$include = $request->get_param('include');
 
 	// Validate post type
 	if (!post_type_exists($post_type)) {
@@ -891,7 +912,17 @@ function gw_custom_blocks_rest_search_posts($request) {
 		'order' => 'ASC',
 	);
 
-	if (!empty($search)) {
+	// Fetch specific posts by ID (used to preload an already-saved value that may not
+	// appear in the search results). When include is present we ignore the search and
+	// return exactly those posts, so the selected option always has a label. We relax
+	// post_status to 'any' here so a saved page that is draft/private/pending still
+	// resolves to a label (the post_type filter still excludes attachments etc.).
+	if (!empty($include) && is_array($include)) {
+		$args['post__in'] = $include;
+		$args['posts_per_page'] = count($include);
+		$args['orderby'] = 'post__in';
+		$args['post_status'] = 'any';
+	} elseif (!empty($search)) {
 		$args['s'] = $search;
 	}
 
