@@ -808,6 +808,15 @@ function gw_custom_blocks_register_rest_routes() {
 				'default' => 10,
 				'sanitize_callback' => 'absint',
 			),
+			'include' => array(
+				'default' => array(),
+				'sanitize_callback' => function($param) {
+					if (is_string($param)) {
+						$param = explode(',', $param);
+					}
+					return array_map('absint', (array) $param);
+				},
+			),
 		),
 	));
 
@@ -877,6 +886,7 @@ function gw_custom_blocks_rest_search_posts($request) {
 	$post_type = $request->get_param('type');
 	$search = $request->get_param('search');
 	$per_page = $request->get_param('per_page');
+	$include = $request->get_param('include');
 
 	// Validate post type
 	if (!post_type_exists($post_type)) {
@@ -891,7 +901,14 @@ function gw_custom_blocks_rest_search_posts($request) {
 		'order' => 'ASC',
 	);
 
-	if (!empty($search)) {
+	// Fetch specific posts by ID (used to preload an already-saved value that may not
+	// appear in the search results). When include is present we ignore the search and
+	// return exactly those posts, so the selected option always has a label.
+	if (!empty($include) && is_array($include)) {
+		$args['post__in'] = $include;
+		$args['posts_per_page'] = count($include);
+		$args['orderby'] = 'post__in';
+	} elseif (!empty($search)) {
 		$args['s'] = $search;
 	}
 

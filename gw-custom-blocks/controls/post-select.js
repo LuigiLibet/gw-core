@@ -18,9 +18,59 @@
     const [options, setOptions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [search, setSearch] = useState('');
-    const [selectedLabel, setSelectedLabel] = useState('');
+    // The already-saved option, fetched by ID so its label shows even when it is not
+    // part of the current search results (which only return the first page).
+    const [selectedOption, setSelectedOption] = useState(null);
 
     const postType = field.post_type || 'page';
+
+    // Preload the saved value: if a value is set and it isn't already in the loaded
+    // options, fetch just that post by ID once and keep it so the combobox can render
+    // its label. Without this the saved page "disappears" when it sorts beyond the
+    // first page of results.
+    useEffect(() => {
+      let isActive = true;
+
+      if (!value) {
+        setSelectedOption(null);
+        return;
+      }
+
+      const valueStr = String(value);
+
+      // Already covered by the current options or the cached selected option.
+      if (options.some(opt => opt.value === valueStr)) {
+        return;
+      }
+      if (selectedOption && selectedOption.value === valueStr) {
+        return;
+      }
+
+      const fetchSelected = async () => {
+        try {
+          const apiFetch = wp.apiFetch || (window.wp && window.wp.apiFetch);
+          const queryParams = new URLSearchParams({
+            type: postType,
+            include: valueStr,
+          });
+
+          const response = await apiFetch({ path: `/gw/v1/posts?${queryParams.toString()}` });
+
+          if (isActive && Array.isArray(response) && response.length) {
+            const post = response[0];
+            setSelectedOption({ value: String(post.value), label: post.label });
+          }
+        } catch (e) {
+          console.error('[GW Custom Blocks] Error fetching selected post:', e);
+        }
+      };
+
+      fetchSelected();
+
+      return () => {
+        isActive = false;
+      };
+    }, [value, postType, options, selectedOption]);
 
     // Fetch initial posts or search results
     useEffect(() => {
@@ -60,10 +110,18 @@
       };
     }, [search, postType]);
 
+    // Always keep the saved option in the list, even as the search replaces the rest,
+    // so the combobox can resolve the current value to a label.
+    const valueStr = value ? String(value) : '';
+    let mergedOptions = options;
+    if (selectedOption && valueStr && !options.some(opt => opt.value === valueStr)) {
+      mergedOptions = [selectedOption, ...options];
+    }
+
     return wp.element.createElement('div', { className: 'gw-custom-blocks-post-select-control' },
       wp.element.createElement(ComboboxControl, {
         label: label,
-        value: value ? String(value) : '', // Ensure value is string
+        value: valueStr, // Ensure value is string
         onChange: (newValue) => {
           // Ensure we pass a string or empty string
           onChange(newValue ? String(newValue) : '');
@@ -71,7 +129,7 @@
         onFilterValueChange: (inputValue) => {
           setSearch(inputValue);
         },
-        options: options,
+        options: mergedOptions,
         isLoading: isLoading,
         allowReset: true,
       }),
