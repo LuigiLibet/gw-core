@@ -249,6 +249,23 @@ add_action('init', function(){
 		),
 	));
 
+	// ── SLIDER + SLIDE: RETIRADOS el 2026-08-14 ──────────────────────────────────────────────
+	// Eran lo único que quedaba pidiendo a un CDN (Swiper, desde cdnjs) después de vendorizar
+	// tipografía e iconos — doc 42 §4.2 del repo `juicy-platform`. Juicy Pocket se instala en la
+	// PC de una tienda y funciona SIN internet, así que un bloque cuyo motor vive en cdnjs no
+	// puede quedarse.
+	//
+	// Se midió antes de tocar nada: `wp:gw/slider` aparece en **0 posts** de los CINCO installs
+	// —dashboard de POS (4 blogs), dashboard de Espresso, juicypos.com y juicyespresso.com—.
+	// Nadie lo usa. Y el producto ya tiene su propio carrusel **sin librería a propósito**
+	// (`juicy-core/assets/js/main.js:1168`), así que este bloque contradecía el patrón de la casa.
+	//
+	// Se apaga NO REGISTRANDO, nunca borrando: el código de los dos bloques sigue en
+	// `included-blocks/slider/` y `included-blocks/slide/`, y volver a encenderlos es
+	// `add_filter('gw_slider_activo', '__return_true')`. Si algún día se enciende de verdad,
+	// **vendoriza Swiper primero** — no lo devuelvas al CDN.
+	if (gw_slider_activo()) :
+
 	// Slider block (Swiper) — parent. Only accepts Slide blocks as children.
 	gw_register_block('slider', array(
 		'name'     => __('Slider', 'gwblueprint'),
@@ -319,6 +336,8 @@ add_action('init', function(){
 		'dir'      => 'gw/gw-core/included-blocks',
 		'fields'   => array(),
 	));
+
+	endif; // gw_slider_activo()
 
 	// All Settings Check block (demo block)
 	gw_register_block('all-settings-check', array(
@@ -477,12 +496,35 @@ add_action('init', function(){
 });
 
 /**
+ * ¿Están vivos los bloques Slider/Slide? — el interruptor, en UN solo sitio.
+ *
+ * Apagado desde el 2026-08-14: su motor (Swiper) vivía en `cdnjs.cloudflare.com` y era el último
+ * asset externo del producto. El razonamiento largo está arriba, junto a `gw_register_block`.
+ *
+ * Encender = `add_filter('gw_slider_activo', '__return_true')`. Y si se enciende, **vendoriza
+ * Swiper antes**: devolverlo al CDN reintroduce justo lo que se acaba de quitar, y el check del
+ * selftest que guarda esto sólo mira las funciones del core, no este fichero.
+ */
+if (!function_exists('gw_slider_activo')) {
+	function gw_slider_activo() {
+		return (bool) apply_filters('gw_slider_activo', false);
+	}
+}
+
+/**
  * Register SwiperJS (CDN) for the Slider block.
  *
  * Registered here and enqueued on demand: pre-enqueued on singular views that
  * contain a Slider block (so CSS lands in <head>), and also enqueued from the
  * Slider's view.php as a fallback for any other context. Both are idempotent.
+ *
+ * NOTA (2026-08-14): todo este bloque cuelga ahora de `gw_slider_activo()`. Con el slider
+ * apagado, Swiper **ni siquiera se registra**, así que WordPress deja de emitir el
+ * `dns-prefetch` a cdnjs que salía en el <head> de cada página. Las constantes y los hashes SRI
+ * se conservan para el día que se encienda — pero apuntando a un fichero local, no al CDN.
  */
+if (gw_slider_activo()) :
+
 // Pinned version + Subresource Integrity hashes (from cdnjs) so a compromised CDN
 // cannot inject altered code into client sites. Update all three together on bump.
 define('GW_SWIPER_VERSION', '11.0.5');
@@ -533,4 +575,6 @@ add_filter('style_loader_tag', function ($tag, $handle) {
 		$tag
 	);
 }, 10, 2);
+
+endif; // gw_slider_activo()
 
