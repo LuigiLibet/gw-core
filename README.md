@@ -99,7 +99,7 @@ unless you provide the following:
 
 ## Third-party assets
 
-The **Slider** block loads SwiperJS from cdnjs, pinned to a fixed version with Subresource
-Integrity (SRI) hashes (see `GW_SWIPER_VERSION` / `GW_SWIPER_SRI_*` in `included-blocks.php`).
-When bumping the Swiper version, update the version **and** both SRI hashes together —
-get them from <https://cdnjs.com/libraries/Swiper>.
+The **Slider** block uses SwiperJS, bundled locally in `included-blocks/slider/lib/swiper/`
+(MIT license) — no CDN, so sites work offline. Swiper is only loaded on pages that contain a
+Slider block. To bump it, replace both files with the new release from
+<https://cdnjs.com/libraries/Swiper> and update `GW_SWIPER_VERSION` in `included-blocks.php`.

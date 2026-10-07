@@ -34,6 +34,9 @@ dist/
 build/
 *.min.js
 *.min.css
+# Third-party libraries bundled on purpose (shipped in the release ZIP)
+!included-blocks/slider/lib/swiper/*.min.js
+!included-blocks/slider/lib/swiper/*.min.css
 
 # Temporary files
 *.tmp
