@@ -1,0 +1,5 @@
+# Canonicalize the author's git identities (same person, two emails/usernames).
+# .mailmap does not rewrite history; it only unifies how authors are displayed
+# by `git log`, `git shortlog`, `git blame`, etc.
+Luis Castillo <luiscastillocuervo@gmail.com> <luigiattomic@gmail.com>
+Luis Castillo <luiscastillocuervo@gmail.com> LuigiLibet <luigiattomic@gmail.com>

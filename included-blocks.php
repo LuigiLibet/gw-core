@@ -249,6 +249,24 @@ add_action('init', function(){
 		),
 	));
 
+	// ── SLIDER + SLIDE: DISABLED on 2026-08-14 ───────────────────────────────────────────────
+	// They were the last thing still requesting a CDN (Swiper, from cdnjs) after fonts and
+	// icons were vendored — doc 42 §4.2 of the `juicy-platform` repo. Juicy Pocket is installed
+	// on a store's PC and works WITHOUT internet, so a block whose engine lives on cdnjs can't
+	// stay.
+	//
+	// Measured before changing anything: `wp:gw/slider` appears in **0 posts** across the FIVE
+	// Juicy installs — POS dashboard (4 blogs), Espresso dashboard, juicypos.com and
+	// juicyespresso.com. Nobody uses it there. And the product already has its own carousel,
+	// **library-free on purpose** (`juicy-core/assets/js/main.js:1168`), so this block went
+	// against the house pattern.
+	//
+	// Disabled by NOT REGISTERING, never by deleting: the code of both blocks is still in
+	// `included-blocks/slider/` and `included-blocks/slide/`, and turning them back on is
+	// `add_filter('gw_slider_enabled', '__return_true')`. If it is ever really turned on,
+	// **vendor Swiper first** — don't put it back on the CDN.
+	if (gw_slider_enabled()) :
+
 	// Slider block (Swiper) — parent. Only accepts Slide blocks as children.
 	gw_register_block('slider', array(
 		'name'     => __('Slider', 'gwblueprint'),
@@ -319,6 +337,8 @@ add_action('init', function(){
 		'dir'      => 'gw/gw-core/included-blocks',
 		'fields'   => array(),
 	));
+
+	endif; // gw_slider_enabled()
 
 	// All Settings Check block (demo block)
 	gw_register_block('all-settings-check', array(
@@ -477,12 +497,35 @@ add_action('init', function(){
 });
 
 /**
+ * Are the Slider/Slide blocks enabled? — the switch, in ONE place.
+ *
+ * Disabled since 2026-08-14: their engine (Swiper) lived on `cdnjs.cloudflare.com` and was the
+ * product's last external asset. The full reasoning is above, next to `gw_register_block`.
+ *
+ * Turn on = `add_filter('gw_slider_enabled', '__return_true')`. And if you turn it on, **vendor
+ * Swiper first**: putting it back on the CDN reintroduces exactly what was just removed, and the
+ * selftest check guarding this only looks at the core functions, not this file.
+ */
+if (!function_exists('gw_slider_enabled')) {
+	function gw_slider_enabled() {
+		return (bool) apply_filters('gw_slider_enabled', false);
+	}
+}
+
+/**
  * Register SwiperJS (CDN) for the Slider block.
  *
  * Registered here and enqueued on demand: pre-enqueued on singular views that
  * contain a Slider block (so CSS lands in <head>), and also enqueued from the
  * Slider's view.php as a fallback for any other context. Both are idempotent.
+ *
+ * NOTE (2026-08-14): this whole section now depends on `gw_slider_enabled()`. With the slider
+ * off, Swiper **isn't even registered**, so WordPress stops emitting the `dns-prefetch` to
+ * cdnjs that appeared in every page's <head>. The constants and SRI hashes are kept for the day
+ * it's turned on — but pointing at a local file, not the CDN.
  */
+if (gw_slider_enabled()) :
+
 // Pinned version + Subresource Integrity hashes (from cdnjs) so a compromised CDN
 // cannot inject altered code into client sites. Update all three together on bump.
 define('GW_SWIPER_VERSION', '11.0.5');
@@ -533,4 +576,6 @@ add_filter('style_loader_tag', function ($tag, $handle) {
 		$tag
 	);
 }, 10, 2);
+
+endif; // gw_slider_enabled()
 
