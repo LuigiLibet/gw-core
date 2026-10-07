@@ -147,6 +147,11 @@ function run_update(array $manifest) {
 	if (!init_filesystem()) {
 		return new \WP_Error('gwcore_filesystem', 'Could not access the filesystem.');
 	}
+	// Never reinstall or downgrade: an older release may not ship this updater, which
+	// would leave the site without any way to update.
+	if (!version_compare(normalize_version($manifest['version']), installed_version(), '>')) {
+		return new \WP_Error('gwcore_not_newer', 'The remote version is not newer than the installed one.');
+	}
 
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	$tmp_file = download_url($manifest['zip_url']);
@@ -415,15 +420,14 @@ function render_admin_page() {
 
 	if ($remote && version_compare($remote, $installed, '>')) {
 		echo '<p>A new version is available.</p>';
+		echo '<form method="post">';
+		wp_nonce_field(NONCE_ACTION, 'gwcore_nonce');
+		echo '<input type="hidden" name="gwcore_action" value="update">';
+		submit_button('Update now', 'primary', 'submit', false);
+		echo '</form>';
 	} elseif ($remote) {
 		echo '<p>You are running the latest version.</p>';
 	}
-
-	echo '<form method="post">';
-	wp_nonce_field(NONCE_ACTION, 'gwcore_nonce');
-	echo '<input type="hidden" name="gwcore_action" value="update">';
-	submit_button('Update now', 'primary', 'submit', false);
-	echo '</form>';
 
 	$legacy = legacy_files_present();
 	if ($legacy) {
