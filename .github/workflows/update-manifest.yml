@@ -32,6 +32,15 @@ jobs:
           # Copy directories needed for production
           cp -r gw-custom-blocks zip-temp/ 2>/dev/null || true
           cp -r included-blocks zip-temp/ 2>/dev/null || true
+          cp -r gw-core-updater zip-temp/
+          # The tag's manifest.json still describes the previous release (it is only
+          # updated after this build), so ship one with the real version: the
+          # updater reads it to know what is installed.
+          cat > zip-temp/manifest.json <<EOF
+          {
+            "version": "${{ steps.vars.outputs.VERSION }}"
+          }
+          EOF
           # Create zip from the temp directory contents (not the directory itself)
           cd zip-temp
           zip -r ../gw-core.zip .

@@ -1,84 +1,97 @@
-# Guía Rápida para Crear una Nueva Versión
+# Quick Guide: Releasing a New Version
 
-## Flujo Completo
+> Releasing publishes a new `manifest.json`. Client sites do **not** update on their own —
+> see [Updating GW Core on a site](README.md#updating-gw-core-on-a-site).
 
-### 1. Hacer cambios en el código
-Edita los archivos que necesites.
+## Full Flow
 
-### 2. Crear la nueva versión
+### 1. Make your code changes
+Edit whatever files you need.
 
-Tienes **dos opciones**:
+### 2. Create the new version
 
-#### Opción A: Desde Cursor (Recomendado)
-1. Presiona `Cmd+Shift+P` (Mac) o `Ctrl+Shift+P` (Windows/Linux)
-2. Escribe "Tasks: Run Task"
-3. Selecciona:
-   - **"Release: Patch Version"** → para cambios pequeños (1.2.3 → 1.2.4)
-   - **"Release: Minor Version"** → para nuevas características (1.2.3 → 1.3.0)
-   - **"Release: Major Version"** → para cambios importantes (1.2.3 → 2.0.0)
+You have **two options**:
 
-#### Opción B: Desde la Terminal
+#### Option A: From Cursor / VS Code (Recommended)
+1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
+2. Type "Tasks: Run Task"
+3. Select:
+   - **"Release: Patch Version"** → for small fixes (1.2.3 → 1.2.4)
+   - **"Release: Minor Version"** → for new features (1.2.3 → 1.3.0)
+   - **"Release: Major Version"** → for breaking changes (1.2.3 → 2.0.0)
+
+#### Option B: From the terminal
 ```bash
-# Versión patch (1.2.3 → 1.2.4)
-./scripts/release.sh patch "Descripción de cambios"
+# Patch version (1.2.3 → 1.2.4)
+./scripts/release.sh patch "Description of changes"
 
-# Versión minor (1.2.3 → 1.3.0)
-./scripts/release.sh minor "Nuevas características"
+# Minor version (1.2.3 → 1.3.0)
+./scripts/release.sh minor "New features"
 
-# Versión major (1.2.3 → 2.0.0)
-./scripts/release.sh major "Cambios importantes"
+# Major version (1.2.3 → 2.0.0)
+./scripts/release.sh major "Breaking changes"
 ```
 
-El script automáticamente:
-- ✅ Detecta el último tag
-- ✅ Calcula la nueva versión
-- ✅ Hace commit de los cambios
-- ✅ Crea el tag
-- ⚠️  Intenta hacer push (fallará por autenticación)
+The script automatically:
+- ✅ Detects the latest tag
+- ✅ Calculates the new version
+- ✅ Commits your changes
+- ✅ Creates the tag
+- ✅ Pushes the commit and the tag (if Git is authenticated — see `AUTHENTICATION.md`)
 
-### 3. Hacer push con tu token
+### 3. If the push failed: authenticate and push
 
-Después de que el script termine (aunque falle el push), ejecuta:
+The commit and tag are already created locally. The recommended fix is to authenticate
+once with `gh auth login` (or the macOS credential helper) and push:
 
 ```bash
-./scripts/push-with-token.sh TU_TOKEN_AQUI
+git push origin main
+git push origin vX.Y.Z
 ```
 
-Reemplaza `TU_TOKEN_AQUI` con tu Personal Access Token de GitHub.
+As a one-off fallback you can use the token script (the token ends up in your shell
+history — see `AUTHENTICATION.md`):
 
-**Nota:** El token se usa temporalmente y se elimina del remote después del push por seguridad.
-
-### 4. Verificar el workflow
-
-El workflow de GitHub Actions se ejecutará automáticamente y actualizará el `manifest.json`. Puedes verificar:
-
-1. Ve a: https://github.com/LuigiLibet/gw-core/actions
-2. O ejecuta: `git pull origin main` después de unos minutos para ver el manifest actualizado
-
-## Resumen del Flujo
-
-```
-Cambios en código
-    ↓
-./scripts/release.sh patch "mensaje"
-    ↓
-./scripts/push-with-token.sh TU_TOKEN
-    ↓
-GitHub Actions actualiza manifest.json automáticamente
-    ↓
-✅ Versión publicada
+```bash
+./scripts/push-with-token.sh YOUR_TOKEN_HERE
 ```
 
-## Archivos Útiles
+The token is only used temporarily and is removed from the remote after the push.
 
-- `scripts/release.sh` - Script principal para crear versiones
-- `scripts/push-with-token.sh` - Script para hacer push con token
-- `.vscode/tasks.json` - Tareas de Cursor para ejecutar desde el IDE
-- `AUTHENTICATION.md` - Guía detallada de autenticación
+### 4. Check the workflow
+
+The GitHub Actions workflow runs automatically, builds `gw-core.zip`, attaches it to the
+GitHub Release and updates `manifest.json`. To check it:
+
+1. Go to: https://github.com/LuigiLibet/gw-core/actions
+2. Or run `git pull origin main` after a few minutes to see the updated manifest
+
+## Flow Summary
+
+```
+Code changes
+    ↓
+./scripts/release.sh patch "message"
+    ↓
+(push, if the script couldn't)
+    ↓
+GitHub Actions builds the ZIP and updates manifest.json
+    ↓
+✅ Version published
+    ↓
+On each site: /wp-admin/admin.php?page=gwcore-updater → "Update now"
+```
+
+## Useful Files
+
+- `scripts/release.sh` - Main script for creating versions
+- `scripts/push-with-token.sh` - Fallback script to push with a token
+- `.vscode/tasks.json` - Editor tasks to run releases from the IDE
+- `AUTHENTICATION.md` - Detailed authentication guide
 
 ## Tips
 
-- **Guarda tu token de forma segura** (usa un gestor de contraseñas)
-- El script detecta automáticamente el último tag, así que no necesitas preocuparte por eso
-- Si olvidas hacer push, los commits y tags están en local, solo ejecuta el script de push
-- El workflow tarda 1-2 minutos en actualizar el manifest.json
+- **Store your token safely** (use a password manager)
+- The script detects the latest tag automatically, so you don't need to track it
+- If you forget to push, the commits and tags are still local — just push them
+- The workflow takes 1-2 minutes to update `manifest.json`

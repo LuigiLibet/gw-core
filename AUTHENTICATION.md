@@ -1,78 +1,78 @@
-# Configuración de Autenticación para GitHub
+# GitHub Authentication Setup
 
-> **Recomendación actual (más segura):** usa la **GitHub CLI** (`gh auth login`) o el
-> **credential helper de macOS** (`git config --global credential.helper osxkeychain`).
-> Ambos guardan el token en el llavero del sistema y evitan exponerlo en la línea de
-> comandos o en el historial del shell. El flujo manual de abajo y
-> `scripts/push-with-token.sh` se conservan solo como fallback.
+> **Current recommendation (most secure):** use the **GitHub CLI** (`gh auth login`) or the
+> **macOS credential helper** (`git config --global credential.helper osxkeychain`).
+> Both store the token in the system keychain and keep it out of the command line and your
+> shell history. The manual flow below and `scripts/push-with-token.sh` are kept only as a
+> fallback.
 
-## Opción 1: Personal Access Token (PAT)
+## Option 1: Personal Access Token (PAT)
 
-### Paso 1: Crear un Personal Access Token
+### Step 1: Create a Personal Access Token
 
-1. Ve a GitHub: https://github.com/settings/tokens
-2. Click en "Generate new token" → "Generate new token (classic)"
-3. Dale un nombre (ej: "gw-core-releases")
-4. Selecciona los permisos:
-   - ✅ `repo` (acceso completo a repositorios privados)
-   - ✅ `workflow` (actualizar archivos de workflow) - **IMPORTANTE si vas a modificar workflows**
-5. Click en "Generate token"
-6. **IMPORTANTE**: Copia el token inmediatamente (solo se muestra una vez)
+1. Go to GitHub: https://github.com/settings/tokens
+2. Click "Generate new token" → "Generate new token (classic)"
+3. Give it a name (e.g. "gw-core-releases")
+4. Select the scopes:
+   - ✅ `repo` (full access to private repositories)
+   - ✅ `workflow` (update workflow files) - **IMPORTANT if you will modify workflows**
+5. Click "Generate token"
+6. **IMPORTANT**: Copy the token right away (it is only shown once)
 
-### Paso 2: Configurar Git para usar el token
+### Step 2: Configure Git to use the token
 
-Tienes dos opciones:
+You have two options:
 
-#### Opción A: Usar el token directamente en la URL (temporal)
+#### Option A: Put the token directly in the URL (temporary)
 ```bash
-git remote set-url origin https://TU_TOKEN@github.com/LuigiLibet/gw-core.git
+git remote set-url origin https://YOUR_TOKEN@github.com/LuigiLibet/gw-core.git
 ```
 
-#### Opción B: Usar Git Credential Helper (recomendado)
+#### Option B: Use the Git Credential Helper (recommended)
 ```bash
-# Configurar el credential helper para macOS
+# Configure the credential helper for macOS
 git config --global credential.helper osxkeychain
 
-# Luego, la primera vez que hagas push, Git te pedirá:
-# Username: tu_usuario_de_github
-# Password: pega_tu_token_aqui
+# The first time you push, Git will ask for:
+# Username: your_github_username
+# Password: paste_your_token_here
 ```
 
-### Paso 3: Probar el push
+### Step 3: Test the push
 ```bash
 git push origin main
 git push origin v1.2.2
 ```
 
-## Opción 2: Configurar SSH (si prefieres)
+## Option 2: Configure SSH (if you prefer)
 
-### Paso 1: Verificar tu clave pública
+### Step 1: Check your public key
 ```bash
 cat ~/.ssh/id_ed25519.pub
 ```
 
-### Paso 2: Agregar la clave a GitHub
-1. Copia el contenido de la clave pública
-2. Ve a: https://github.com/settings/keys
-3. Click en "New SSH key"
-4. Pega la clave y guarda
+### Step 2: Add the key to GitHub
+1. Copy the contents of the public key
+2. Go to: https://github.com/settings/keys
+3. Click "New SSH key"
+4. Paste the key and save
 
-### Paso 3: Cambiar el remote a SSH
+### Step 3: Switch the remote to SSH
 ```bash
 git remote set-url origin git@github.com:LuigiLibet/gw-core.git
 ```
 
-### Paso 4: Probar
+### Step 4: Test
 ```bash
 ssh -T git@github.com
 git push origin main
 ```
 
-## Opción 3: GitHub CLI (gh)
+## Option 3: GitHub CLI (gh)
 
-Si tienes GitHub CLI instalado:
+If you have the GitHub CLI installed:
 ```bash
 gh auth login
 ```
 
-Luego Git usará automáticamente las credenciales de `gh`.
+Git will then use the `gh` credentials automatically.

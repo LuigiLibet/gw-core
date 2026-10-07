@@ -14,6 +14,12 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
+// Every theme requires this file (not always init.php or included-blocks.php),
+// so it also loads the self-updater for the whole gw-core package.
+if (file_exists(dirname(__DIR__) . '/gw-core-updater/gw-core-updater.php')) {
+	require_once dirname(__DIR__) . '/gw-core-updater/gw-core-updater.php';
+}
+
 /**
  * GW Custom Blocks
  * Simple helper to register dynamic (PHP-rendered) blocks with optional auto-discovery.
@@ -390,12 +396,12 @@ function gw_custom_blocks_bootstrap_editor_script() {
 	$base_path = $theme_uri . 'gw/gw-core/gw-custom-blocks/';
 	$version = wp_get_theme()->get('Version');
 	
-	// Dependencies base de WordPress
+	// Base WordPress dependencies
 	$wp_deps = array('wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 
 	                 'wp-block-editor', 'wp-server-side-render', 'wp-data', 
 	                 'wp-core-data', 'wp-api-fetch');
 	
-	// 1. Utilidades (sin dependencias internas, solo wp.*)
+	// 1. Utilities (no internal dependencies, only wp.*)
 	wp_register_script(
 		'gw-custom-blocks-utils',
 		$base_path . 'lib/utils.js',
@@ -404,7 +410,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		true
 	);
 	
-	// 2. Dependencias (depende de utils)
+	// 2. Dependencies (depends on utils)
 	wp_register_script(
 		'gw-custom-blocks-deps',
 		$base_path . 'lib/dependencies.js',
@@ -413,7 +419,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		true
 	);
 	
-	// 3. Controles individuales (dependen de deps y utils)
+	// 3. Individual controls (depend on deps and utils)
 	$controls = array(
 		'post-select' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
 		'image' => array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
@@ -433,7 +439,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		);
 	}
 	
-	// 4. Controles base (depende de todos los controles individuales)
+	// 4. Base controls (depends on every individual control)
 	$base_control_deps = array_merge(
 		array('gw-custom-blocks-deps', 'gw-custom-blocks-utils'),
 		array_map(function($c) { return "gw-custom-blocks-control-{$c}"; }, array_keys($controls))
@@ -446,7 +452,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		true
 	);
 	
-	// 5. UI (toolbar, inspector) - depende de base
+	// 5. UI (toolbar, inspector) - depends on base
 	wp_register_script(
 		'gw-custom-blocks-ui',
 		$base_path . 'core/ui.js',
@@ -455,7 +461,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		true
 	);
 	
-	// 6. Registro de bloques - depende de ui
+	// 6. Block registry - depends on ui
 	wp_register_script(
 		'gw-custom-blocks-registry',
 		$base_path . 'core/block-registry.js',
@@ -464,7 +470,7 @@ function gw_custom_blocks_bootstrap_editor_script() {
 		true
 	);
 	
-	// 7. Orquestador principal - depende de registry
+	// 7. Main orchestrator - depends on registry
 	wp_register_script(
 		'gw-custom-blocks-editor',
 		$base_path . 'gw-custom-blocks.js',

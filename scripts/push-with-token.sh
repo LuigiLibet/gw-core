@@ -1,36 +1,36 @@
 #!/bin/bash
 
-# ⚠️  AVISO DE SEGURIDAD
-# Pasar el token como argumento lo deja en el historial del shell (~/.zsh_history,
-# ~/.bash_history) y en la lista de procesos. Prefiere uno de estos métodos:
-#   - GitHub CLI:        gh auth login   (luego: git push)
+# ⚠️  SECURITY NOTICE
+# Passing the token as an argument leaves it in your shell history (~/.zsh_history,
+# ~/.bash_history) and in the process list. Prefer one of these methods instead:
+#   - GitHub CLI:        gh auth login   (then: git push)
 #   - Credential helper: git config --global credential.helper osxkeychain
-# Este script se conserva solo como fallback puntual. Ver AUTHENTICATION.md.
+# This script is kept only as a one-off fallback. See AUTHENTICATION.md.
 #
-# Script para hacer push usando un token de GitHub
-# Uso: ./scripts/push-with-token.sh TU_TOKEN_AQUI
+# Script to push using a GitHub token
+# Usage: ./scripts/push-with-token.sh YOUR_TOKEN_HERE
 
 if [ -z "$1" ]; then
-    echo "Error: Debes proporcionar tu token de GitHub"
-    echo "Uso: ./scripts/push-with-token.sh TU_TOKEN"
+    echo "Error: You must provide your GitHub token"
+    echo "Usage: ./scripts/push-with-token.sh YOUR_TOKEN"
     exit 1
 fi
 
 TOKEN=$1
 
-# Configurar el remote con el token
+# Point the remote at the token-authenticated URL
 git remote set-url origin https://${TOKEN}@github.com/LuigiLibet/gw-core.git
 
-# Hacer push
-echo "Haciendo push de commits..."
+# Push
+echo "Pushing commits..."
 git push origin main
 
-echo "Haciendo push de tags..."
+echo "Pushing tags..."
 git push origin --tags
 
-echo "✓ Push completado!"
+echo "✓ Push completed!"
 
-# Restaurar el remote sin el token (por seguridad)
+# Restore the remote without the token (for security)
 git remote set-url origin https://github.com/LuigiLibet/gw-core.git
 
-echo "✓ Remote restaurado a URL normal"
+echo "✓ Remote restored to the normal URL"

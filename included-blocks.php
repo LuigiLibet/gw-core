@@ -142,7 +142,7 @@ add_action('init', function(){
 		'render'   => 'meta-tag/view.php',
 		'dir'      => 'gw/gw-core/included-blocks',
 		'fields'   => array(
-			'key'    => array('type'=>'string','control'=>'text','label'=>__('Meta key','gwblueprint'),'default'=>'ejemplo'),
+			'key'    => array('type'=>'string','control'=>'text','label'=>__('Meta key','gwblueprint'),'default'=>'example'),
 			'tag'    => array('type'=>'string','control'=>'select','label'=>__('HTML tag','gwblueprint'),'default'=>'span','options'=>array('span','small','strong','em','i','b','div')),
 			'before' => array('type'=>'string','control'=>'text','label'=>__('Text before','gwblueprint'),'default'=>''),
 			'after'  => array('type'=>'string','control'=>'text','label'=>__('Text after','gwblueprint'),'default'=>''),
@@ -344,7 +344,7 @@ add_action('init', function(){
 				'type'    => 'string',
 				'control' => 'textarea',
 				'label'   => __('Description', 'gwblueprint'),
-				'default' => 'Bloque de demostración para probar todos los tipos de campos.',
+				'default' => 'Demo block for testing every field type.',
 			),
 			// Number field
 			'quantity' => array(

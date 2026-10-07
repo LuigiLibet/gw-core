@@ -2,7 +2,7 @@
 /**
  * Block: GW Meta Tag (simple)
  * Displays a post meta wrapped in an HTML tag (default <span>).
- * - key (string) meta key; default 'ejemplo'
+ * - key (string) meta key; default 'example'
  * - tag (string) allowed HTML tag
  * - before/after (string) text around the meta value
  * - className (string) additional CSS classes
@@ -17,7 +17,7 @@ $raw_tag = isset($attributes['tag']) ? strtolower(preg_replace('/[^a-z0-9:-]/i',
 $tag = in_array($raw_tag, $allowed_tags, true) ? $raw_tag : 'span';
 
 $cls   = !empty($attributes['className']) ? ' class="'.esc_attr($attributes['className']).'"' : '';
-$key   = sanitize_key($attributes['key'] ?? 'ejemplo');
+$key   = sanitize_key($attributes['key'] ?? 'example');
 if (!$key) return;
 $before= (string)($attributes['before'] ?? '');
 $after = (string)($attributes['after'] ?? '');

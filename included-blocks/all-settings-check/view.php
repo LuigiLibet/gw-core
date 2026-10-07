@@ -1,7 +1,7 @@
 <?php
 /**
- * Bloque: GW All Settings Check (demo)
- * Muestra valores de atributos para probar UI/SSR con todos los tipos de campos.
+ * Block: GW All Settings Check (demo)
+ * Displays attribute values to test the UI/SSR with every field type.
  */
 if (!defined('ABSPATH')) {
 	exit;
@@ -21,7 +21,7 @@ $get = static function($key, $default = '') use ($attributes) {
 
 // Basic fields
 $title = (string)$get('title', 'All Settings Check');
-$desc = (string)$get('description', 'Bloque de demostración para probar todos los tipos de campos.');
+$desc = (string)$get('description', 'Demo block for testing every field type.');
 $quantity = isset($attributes['quantity']) ? (int)$attributes['quantity'] : 10;
 $size = isset($attributes['size']) ? (int)$attributes['size'] : 16;
 $enabled = !empty($attributes['enabled']);
